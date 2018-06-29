@@ -19,7 +19,5 @@ from django.conf.urls import include, url
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    url(r'^accounts/', include('users.urls')),
-    url(r'^v1/', include('v1.urls')),
-#    url(r'^api/v1/', include('apis.api_v1.urls', namespace='api-v1')), 
+    url(r'^accounts/', include('app.urls')),
 ]
