@@ -4,7 +4,6 @@ from .models import UserProfile
 from .models import Expertise
 from .models import QuestionForm
 from django.contrib import auth
-from .forms import RegistrationForm, LoginForm, ProfileForm, PwdChangeForm
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
