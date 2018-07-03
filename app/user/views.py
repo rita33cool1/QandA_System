@@ -1,4 +1,3 @@
-#from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.models import User
 from ..models import UserProfile
 from ..models import Expertise
@@ -42,12 +41,11 @@ def UserLogin(request, format='json'):
         user = auth.authenticate(username=username, password=password)
         if user is not None and user.is_active:
             auth.login(request, user)
-            success_message = success_message 
             if not Token.objects.filter(user_id__exact=user.id):
                 token = Token.objects.create(user=user)
             else:
                 token = Token.objects.get(user_id=user.id)
-            json = {'msg':success_message, 'token':token.key}
+            json = {'msg':success_message, 'key':token.key}
             return Response(json, status=status.HTTP_202_ACCEPTED)
     json = {'msg':serializer.errors}       
     return Response(json, status=status.HTTP_400_BAD_REQUEST)
@@ -90,10 +88,10 @@ def SetProfile(request, format='json'):
                 exper.save()
                 profile.save()
                 profile.expertises.add(exper)
-            exps = []
-            for exp in profile.expertises.all():
-                 exps.append(exp.expertise)
-            json = {'msg': success_message, 'expertise':exps}
+            #exps = []
+            #for exp in profile.expertises.all():
+            #     exps.append(exp.expertise)
+            json = {'msg': success_message} #, 'expertise':exps}
             return Response(json, status=status.HTTP_202_ACCEPTED)
     json = {'msg':token_serializer.errors+profile_serializer.errors}
     return Response(json,status=status.HTTP_400_BAD_REQUEST)
