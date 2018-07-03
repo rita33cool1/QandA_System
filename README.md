@@ -62,11 +62,11 @@ QandA_System/
 Url: POST http://localhost:8000/accounts/api/users/register/  
 I/O format: json  
 Input: 
-    {  
+    `{  
         "username": <username>,  
         "email": <email>,  
         "password": <password>  
-    }  
+    }`  
 Input details:  
   username: (require)  
   email: (require)  
