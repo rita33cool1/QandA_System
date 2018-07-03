@@ -16,12 +16,12 @@ An app contains APIs.
 
 ## File Structure 
 QandA_System/  
-├── app  
+|── app  
 │   ├── admin.py  
 │   ├── apps.py  
 │   ├── __init__.py  
 │   ├── models.py  
-│   ├── question 
+│   ├── question   
 │   │   ├── serializer.py  
 │   │   └── views.py  
 │   ├── serializer.py  
