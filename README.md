@@ -15,33 +15,29 @@ Including basical settings such as urls.
 An app contains APIs.
 
 ## File Structure 
-QandA_System/
-├── app
-│   ├── admin.py
-│   ├── apps.py
-│   ├── __init__.py
-│   ├── migrations
-│   │   ├── 0001_initial.py
-│   │   ├── 0002_auto_20180703_1427.py
-│   │   ├── __init__.py
-│   ├── models.py
-│   ├── question
-│   │   ├── serializer.py
-│   │   └── views.py
-│   ├── serializer.py
-│   ├── tests.py
-│   ├── urls.py
-│   ├── user
-│   │   ├── serializer.py
-│   │   └── views.py
-│   └── views.py
-├── manage.py
-├── QandA_System
-│   ├── __init__.py
-│   ├── settings.py
-│   ├── urls.py
-│   └── wsgi.py
-├── README.md 
+QandA_System/  
+├── app  
+│   ├── admin.py  
+│   ├── apps.py  
+│   ├── __init__.py  
+│   ├── models.py  
+│   ├── question 
+│   │   ├── serializer.py  
+│   │   └── views.py  
+│   ├── serializer.py  
+│   ├── tests.py  
+│   ├── urls.py  
+│   ├── user  
+│   │   ├── serializer.py  
+│   │   └── views.py  
+│   └── views.py  
+├── manage.py  
+├── QandA_System  
+│   ├── __init__.py  
+│   ├── settings.py  
+│   ├── urls.py  
+│   └── wsgi.py  
+├── README.md   
     
 ## Expected API  
 + Register
