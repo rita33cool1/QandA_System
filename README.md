@@ -11,10 +11,37 @@ Server display language: zh-TW
   
 ### QandA_System/  
 Including basical settings such as urls.  
-### users/   
-An app contains APIs related to user data.  
-### v1/  
-An app contains APIs related to other things.  
+### app/   
+An app contains APIs.
+
+## File Structure 
+QandA_System/
+├── app
+│   ├── admin.py
+│   ├── apps.py
+│   ├── __init__.py
+│   ├── migrations
+│   │   ├── 0001_initial.py
+│   │   ├── 0002_auto_20180703_1427.py
+│   │   ├── __init__.py
+│   ├── models.py
+│   ├── question
+│   │   ├── serializer.py
+│   │   └── views.py
+│   ├── serializer.py
+│   ├── tests.py
+│   ├── urls.py
+│   ├── user
+│   │   ├── serializer.py
+│   │   └── views.py
+│   └── views.py
+├── manage.py
+├── QandA_System
+│   ├── __init__.py
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+├── README.md 
     
 ## Expected API  
 + Register
@@ -52,15 +79,8 @@ Response: {
         "msg": <message>  
         }  
 Response details:
-<<<<<<< HEAD
 <message>  
 + "Success": If register successfully.
 + Error message
 
-argon2$argon2i$v=19$m=512,t=2,p=2$M3ZLNGhRWXB5QjBT$ABwJmSX684adV2ObxHbjIQ
-=======
-  <message>  
-    + "Success": If register successfully.
-    + Error message
->>>>>>> db9a696b6e78fc7689336a88bd62cb8e9035b9e5
 
