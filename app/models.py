@@ -47,7 +47,7 @@ class QuestionForm(models.Model):
 
     reply_number = models.IntegerField('Reply Number', default=0)
     
-    hashtags = models.ManyToManyField(Hashtag)
+    expertises = models.ManyToManyField(Expertise)
 
     class Meta:
         verbose_name = 'Question Form'
