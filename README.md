@@ -17,27 +17,27 @@ An app contains APIs.
 ## File Structure 
 QandA_System/  
 |── app  
-│   ├── admin.py  
-│   ├── apps.py  
-│   ├── __init__.py  
-│   ├── models.py  
-│   ├── question   
-│   │   ├── serializer.py  
+│   |── admin.py  
+│   |── apps.py  
+│   |── __init__.py  
+│   |── models.py  
+│   |── question   
+│   │   |── serializer.py  
 │   │   └── views.py  
-│   ├── serializer.py  
-│   ├── tests.py  
-│   ├── urls.py  
-│   ├── user  
-│   │   ├── serializer.py  
+│   |── serializer.py  
+│   |── tests.py  
+│   |── urls.py  
+│   |── user  
+│   │   |── serializer.py  
 │   │   └── views.py  
 │   └── views.py  
-├── manage.py  
-├── QandA_System  
-│   ├── __init__.py  
-│   ├── settings.py  
-│   ├── urls.py  
+|── manage.py  
+|── QandA_System  
+│   |── __init__.py  
+│   |── settings.py  
+│   |── urls.py  
 │   └── wsgi.py  
-├── README.md   
+|── README.md   
     
 ## Expected API  
 + Register
@@ -70,7 +70,6 @@ Input details:
   username: (require)  
   email: (require)  
   password: (require)  
-
 Response: {  
         "msg": <message>  
         }  
@@ -79,4 +78,22 @@ Response details:
 + "Success": If register successfully.
 + Error message
 
+#### Login
+Url: POST http://localhost:8000/accounts/api/users/login/
+I/O format: json
+Input: {
+        "username": <username>,  
+        "email": <email>,  
+        "password": <password>  
+        }  
+Input details:  
+  username: (require)  
+  password: (require)  
+Response: {  
+        "msg": <message>  
+        }  
+Response details:
+<message>  
++ "Success": If login successfully.
++ Error message
 
