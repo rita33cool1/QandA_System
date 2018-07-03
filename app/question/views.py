@@ -83,7 +83,7 @@ def GetQuestion(request, pk):
                 "create_date": question.create_date,
                 "modify_date": question.mod_date,
                 "reply_number": question.reply_number,
-                "hashtags": exps,
+                "expertises": exps,
                 "msg": success_msg
                 }
         return Response(json, status=status.HTTP_200_OK)

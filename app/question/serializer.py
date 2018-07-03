@@ -30,7 +30,7 @@ class QuestionSerializer(serializers.ModelSerializer):
             default=serializers.CreateOnlyDefault(timezone.now),
             )
 
-    hashtags = serializers.ListField(
+    expertises = serializers.ListField(
             child=serializers.CharField(max_length=32),
             )
     
@@ -55,8 +55,8 @@ class QuestionSerializer(serializers.ModelSerializer):
                 create_date=validated_data['create_date'],
                 )
         question.save()
-        print('tag: ', validated_data['hashtags'])
-        for tag in validated_data['hashtags']:
+        print('tag: ', validated_data['expertises'])
+        for tag in validated_data['expertises']:
             htag = Expertise(expertise=tag)
             htag.save()
             question.expertises.add(htag)
@@ -72,11 +72,11 @@ class QuestionSerializer(serializers.ModelSerializer):
             except: print('No title')
             try: instance.content = validated_data['content']
             except: print('No content,')
-            try: validated_data['hashtags']
-            except: print('No hasgtags')
+            try: validated_data['expertises']
+            except: print('No expertises')
             else:
                 instance.expertises.clear()
-                for tag in validated_data['hashtags']:
+                for tag in validated_data['expertises']:
                     htag = Expertise(expertise=tag)
                     htag.save()
                     instance.expertises.add(htag)
@@ -85,7 +85,7 @@ class QuestionSerializer(serializers.ModelSerializer):
         
     class Meta:
         model = QuestionForm 
-        fields = ('key', 'title', 'content', 'create_date', 'hashtags')   
+        fields = ('key', 'title', 'content', 'create_date', 'expertises')   
 
 
 class DeleteQuestionSerializer(serializers.ModelSerializer):
