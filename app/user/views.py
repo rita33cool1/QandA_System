@@ -46,7 +46,7 @@ def UserLogin(request, format='json'):
             else:
                 token = Token.objects.get(user_id=user.id)
             json = {'msg':success_message, 'key':token.key}
-            return Response(json, status=status.HTTP_202_ACCEPTED)
+            return Response(json, status=status.HTTP_200_OK)
     json = {'msg':serializer.errors}       
     return Response(json, status=status.HTTP_400_BAD_REQUEST)
 
@@ -67,7 +67,7 @@ def GetProfile(request, format='json'):
                 'email':user.email, 
                 'expertise':exps
                 }
-        return Response(json, status=status.HTTP_202_ACCEPTED)
+        return Response(json, status=status.HTTP_200_OK)
     
     json = {'msg':serializer.errors}       
     return Response(json, status=status.HTTP_400_BAD_REQUEST)
@@ -92,7 +92,20 @@ def SetProfile(request, format='json'):
             #for exp in profile.expertises.all():
             #     exps.append(exp.expertise)
             json = {'msg': success_message} #, 'expertise':exps}
-            return Response(json, status=status.HTTP_202_ACCEPTED)
+            return Response(json, status=status.HTTP_200_OK)
     json = {'msg':token_serializer.errors+profile_serializer.errors}
     return Response(json,status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(['GET'])
+def GetUserList(request):
+    users = []
+    try: users.append(token.user_id for token in Token.objects.all())
+    except:
+        json = { "msg": 'token not found' }
+        return Response(json,status=status.HTTP_400_BAD_REQUEST)
+    else:
+        json = {
+                "msg": success_message,
+                "user_ids": users
+                }
+        return Response(json, status=status.HTTP_200_OK)
