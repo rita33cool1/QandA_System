@@ -71,9 +71,9 @@ I/O format: json
 Input:  
 
     {
-        "username": <username>,
-        "email": <email>,
-        "password": <password>
+        "username": String,
+        "email": EmailString,
+        "password": String
     }
     
 Input details:  
@@ -83,7 +83,7 @@ Input details:
 Response:  
 
     {
-        "msg": <message>
+        "msg": String
     }
 Response details:  
 **message** --  
@@ -97,9 +97,9 @@ I/O format: json
 Input:  
     
     {
-        "username": <username>,
-        "email": <email>,
-        "password": <password>
+        "username": String,
+        "email": EmailString,
+        "password": String
     }
 Input details:  
   **username** -- (require)  
@@ -107,8 +107,8 @@ Input details:
 Response:  
     
     {
-        "msg": <message>,
-        "key": <key>
+        "msg": String,
+        "key": String
     }
 Response details:  
 **message** --  
@@ -125,7 +125,7 @@ I/O format: json
 Input:  
     
     {
-        "key": <key>
+        "key": String
     }
 Input details:  
 **key** -- (require)  
@@ -133,14 +133,14 @@ Input details:
 Response:  
     
     {
-        "msg": <message>,
-        "username": <username>,
-        "expertise": <expertises[]>,
-        "email": <email>
+        "msg": String,
+        "username": String,
+        "expertise": StringList,
+        "email": EmailString
     }
 Response details:  
 **expertises** --  
-    String array with non-fixed length, ex. ["expertise1", "expertise2"]  
+    String list with non-fixed length, ex. ["expertise1", "expertise2"]  
 
 ---
 ### Set Profile
@@ -149,12 +149,13 @@ I/O format: json
 Input:  
     
     {
-        "key": <key>,
-        "expertises": <expertises[]>
+        "key": String,
+        "expertises": StringList
     {
 Input details:  
 **key** -- (require)  
 **expertise** -- (require)  
+    String list with non-fixed length, ex. ["expertise1", "expertise2", "question3]  
 Response:  
 
     {
@@ -164,23 +165,47 @@ Response:
 ---
 ## Question
 ### Post Question
-Url: POST http://localhost:8000/api/question/post/
+Url: POST http://localhost:8000/api/question/post/  
 
 ---
 ### Modify Question
-Url: POST http://localhost:8000/api/question/edit/
+Url: POST http://localhost:8000/api/question/edit/  
 
 ---
 ### Delete Question
-Url: POST http://localhost:8000/api/question/delete/
+Url: POST http://localhost:8000/api/question/delete/  
 
 ---
 ### Get Question
-Url: GET http://localhost:8000/api/question/<question_id>/
+Url: GET http://localhost:8000/api/question/<question_id>/  
+Response format: json  
+Response:  
+
+    {
+        "msg": String,
+        "username": String
+        "title": String,
+        "content": String,
+        "modify_date": DateString,
+        "expertises": Stringlist,
+        "create_date": DateString,
+        "reply_number": Integer,
+    }
+**expertises** --  
+    Integer list with non-fixed length.   
 
 ---
 ### Get All Questions
-Url: GET http://localhost:8000/api/question/0/
+Url: GET http://localhost:8000/api/question/0/  
+Response format: json  
+Response:  
+
+    {
+        msg": String,
+        "question_ids": IntegerList
+    }
+**question_ids** --  
+    Integer list with non-fixed length.   
 
 ---
 ## Reply
