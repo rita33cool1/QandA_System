@@ -9,12 +9,15 @@ from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework import generics
+from rest_framework import filters
 from .serializer import UserSerializer
 from .serializer import LoginSerializer
 from .serializer import TokenSerializer
 from .serializer import SetProfileSerializer
+from .serializer import GetUserListSerializer
 from rest_framework.authtoken.models import Token
-
+from django_filters.rest_framework import DjangoFilterBackend
 
 ##--------------------API-------------------##
 success_message = 'Success'
@@ -26,7 +29,20 @@ def UserCreate(request, format='json'):
         user = serializer.save()
         if user:
             json = {'msg':success_message}
-            return Response(json, status=status.HTTP_201_CREATED)
+            return Response(json, status=status.HTTP_200_OK)
+    json = {'msg':serializer.errors}
+    return Response(json, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def UserDelete(request, format='json'):
+    serializer = TokenSerializer(data=request.data)
+    if serializer.is_valid():
+        token_key = serializer.data['key']
+        token = Token.objects.get(key=token_key)
+        user = User.objects.get(id=token.user_id)
+        user.delete()
+        json = {'msg':success_message}
+        return Response(json, status=status.HTTP_200_OK)
     json = {'msg':serializer.errors}
     return Response(json, status=status.HTTP_400_BAD_REQUEST)
 
@@ -96,16 +112,17 @@ def SetProfile(request, format='json'):
     json = {'msg':token_serializer.errors+profile_serializer.errors}
     return Response(json,status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['GET'])
-def GetUserList(request):
-    users = []
-    try: users.append(token.user_id for token in Token.objects.all())
-    except:
-        json = { "msg": 'token not found' }
-        return Response(json,status=status.HTTP_400_BAD_REQUEST)
-    else:
-        json = {
-                "msg": success_message,
-                "user_ids": users
-                }
-        return Response(json, status=status.HTTP_200_OK)
+class GetUserList(generics.ListAPIView):
+    serializer_class = GetUserListSerializer
+    lookup_url_kwarg = "username"
+    #filter_backends = (DjangoFilterBackend,)
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('username')
+    def get_queryset(self):
+        queryset = User.objects.all()
+        username = self.request.query_params.get('username', None)
+        if username is not None:
+            return queryset.filter(username__contains=username)
+            
+        else:
+            return queryset

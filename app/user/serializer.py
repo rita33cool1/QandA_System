@@ -2,6 +2,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.models import User
 from ..models import UserProfile
+from ..models import Expertise
 from rest_framework.authtoken.models import Token
 import re
 
@@ -17,8 +18,6 @@ class UserSerializer(serializers.ModelSerializer):
             )
     username = serializers.CharField(
             label='Username',
-            min_length=6,
-            max_length=32,
             required=True,
             validators=[UniqueValidator(queryset=User.objects.all())]
             )
@@ -44,8 +43,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 class LoginSerializer(serializers.ModelSerializer):
     username = serializers.CharField(
-            min_length=6,
-            max_length=32,
             required=True
             )
     password = serializers.CharField(
@@ -92,4 +89,19 @@ class SetProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (['expertises'])    
 
+class ExpertiseSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = Expertise
+        fields = ('expertise')
+class GetUserProfileSerializer(serializers.ModelSerializer):
+    expertises = ExpertiseSerializer(many=True, read_only= True)
+    class Meta:
+        model = UserProfile
+        fields = ('expertises',)
 
+class GetUserListSerializer(serializers.ModelSerializer):
+    users = GetUserProfileSerializer( read_only= True)
+    class Meta:
+        model = User
+        fields = ('username', 'id', 'users')
