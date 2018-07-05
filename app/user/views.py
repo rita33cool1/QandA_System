@@ -21,6 +21,14 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 ##--------------------API-------------------##
 success_message = 'Success'
+error_message = 'Error'
+
+def ParseErrorMsg(msg):
+    print(msg)
+    for k in msg.keys():
+        key = k
+        break
+    return msg[key][0]
 
 @api_view(['POST'])
 def UserCreate(request, format='json'):
@@ -29,9 +37,12 @@ def UserCreate(request, format='json'):
         user = serializer.save()
         if user:
             json = {'msg':success_message}
-            return Response(json, status=status.HTTP_200_OK)
-    json = {'msg':serializer.errors}
-    return Response(json, status=status.HTTP_400_BAD_REQUEST)
+            return Response(json)
+    json = {      
+            "msg": error_message,
+            "errorMsg": ParseErrorMsg(serializer.errors)
+            }
+    return Response(json)
 
 @api_view(['POST'])
 def UserDelete(request, format='json'):
@@ -42,9 +53,9 @@ def UserDelete(request, format='json'):
         user = User.objects.get(id=token.user_id)
         user.delete()
         json = {'msg':success_message}
-        return Response(json, status=status.HTTP_200_OK)
+        return Response(json)
     json = {'msg':serializer.errors}
-    return Response(json, status=status.HTTP_400_BAD_REQUEST)
+    return Response(json)
 
 
 
@@ -62,9 +73,12 @@ def UserLogin(request, format='json'):
             else:
                 token = Token.objects.get(user_id=user.id)
             json = {'msg':success_message, 'key':token.key}
-            return Response(json, status=status.HTTP_200_OK)
-    json = {'msg':serializer.errors}       
-    return Response(json, status=status.HTTP_400_BAD_REQUEST)
+            return Response(json)
+    json = {
+            "msg": error_message,
+            "errorMsg": ParseErrorMsg(serializer.errors)
+            }
+    return Response(json)
 
 @api_view(['POST'])
 def GetProfile(request, format='json'):
@@ -83,10 +97,10 @@ def GetProfile(request, format='json'):
                 'email':user.email, 
                 'expertise':exps
                 }
-        return Response(json, status=status.HTTP_200_OK)
+        return Response(json)
     
     json = {'msg':serializer.errors}       
-    return Response(json, status=status.HTTP_400_BAD_REQUEST)
+    return Response(json)
 
 @api_view(['POST'])
 def SetProfile(request, format='json'):
@@ -108,9 +122,9 @@ def SetProfile(request, format='json'):
             #for exp in profile.expertises.all():
             #     exps.append(exp.expertise)
             json = {'msg': success_message} #, 'expertise':exps}
-            return Response(json, status=status.HTTP_200_OK)
+            return Response(json)
     json = {'msg':token_serializer.errors+profile_serializer.errors}
-    return Response(json,status=status.HTTP_400_BAD_REQUEST)
+    return Response(json)
 
 class GetUserList(generics.ListAPIView):
     serializer_class = GetUserListSerializer
