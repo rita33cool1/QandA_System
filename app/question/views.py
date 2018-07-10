@@ -9,13 +9,18 @@ from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework import generics
+from rest_framework import filters
 from .serializer import QuestionSerializer
+from .serializer import GetQuestionSerializer
 from .serializer import DeleteQuestionSerializer
 from rest_framework.authtoken.models import Token
 
 
 ##--------------------API-------------------##
 success_msg = 'Success'
+error_message = 'Error'
+httpstatus = status.HTTP_200_OK
 
 @api_view(['POST'])
 def PostQuestion(request, format='json'):
@@ -26,9 +31,9 @@ def PostQuestion(request, format='json'):
                 "msg": success_msg, 
                 "question_id": question.id
                 }
-        return Response(json, status=status.HTTP_200_OK)
+        return Response(json, status=status.httpstatus)
     json = {"msg": serializer.errors}
-    return Response(json, status=status.HTTP_400_BAD_REQUEST)
+    return Response(json, status=httpstatus)
 
 @api_view(['POST'])
 def ModifyQuestion(request, format='json'):
@@ -41,11 +46,11 @@ def ModifyQuestion(request, format='json'):
             if serializer.is_valid():
                 question = serializer.save()
                 json = {"msg": success_msg}
-                return Response(json, status=status.HTTP_200_OK)
+                return Response(json, status=httpstatus)
             else: error_msg = serializer.errors
         else: error_msg = 'This question_id does not exist.'
     json = {"msg": error_msg}
-    return Response(json, status=status.HTTP_400_BAD_REQUEST)
+    return Response(json, status=httpstatus)
 
 @api_view(['POST'])
 def DeleteQuestion(request, format='json'):
@@ -57,11 +62,11 @@ def DeleteQuestion(request, format='json'):
         if Token.objects.get(key=token).user_id == question.user_id:
             question.delete()
             json = {"msg": success_msg}
-            return Response(json, status=status.HTTP_200_OK)
+            return Response(json, status=httpstatus)
         else: error_msg = 'The author of the question does not match the token.'
     else: error_msg = serializer.errors
     json = {"msg": error_msg}
-    return Response(json, status=status.HTTP_400_BAD_REQUEST)
+    return Response(json, status=httpstatus)
 
 
 def GetQuestionByID(id):
@@ -91,14 +96,46 @@ def GetQuestion(request, pk):
                 "msg": success_msg,
                 "questions": quests
                 }
-        return Response(json, status=status.HTTP_200_OK)
+        return Response(json, status=httpstatus)
     else:
         if not QuestionForm.objects.filter(id=pk):
             error_msg = 'Wrong question id'
         else:
             json =GetQuestionByID(pk)
-            return Response(json, status=status.HTTP_200_OK)
+            return Response(json, status=httpstatus)
         json = {"msg": error_msg}
-        return Response(json, status=status.HTTP_400_BAD_REQUEST)
+        return Response(json, status=httpstatus)
+
+
+class GetQuestionList(generics.ListAPIView):
+    serializer_class = GetQuestionSerializer
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('user_id', 'id')
+    def get_queryset(self):
+        queryset = QuestionForm.objects.all()
+        uid = self.request.query_params.get('uid', None)
+        qid = self.request.query_params.get('qid', None)
+        if uid is None and qid is None:
+            return queryset
+        elif uid is not None and qid is not None:
+            return queryset.filter(user__exact=uid).filter(id__exact=qid)
+        elif uid is not None:
+            return queryset.filter(user__exact=uid)
+        else:
+            return queryset.filter(id__exact=qid)
+
+    def list(self, request):
+        queryset = self.get_queryset()
+        serializer = GetQuestionSerializer(queryset, many=True)
+        usernames = {}
+        for quest in serializer.data:
+            quest['user_id'] = quest['user']
+            quest['user'] = User.objects.get(id=quest['user_id']).username
+            exps = []
+            for eid in quest['expertises']:
+                exps.append(Expertise.objects.get(id=eid).expertise)
+            quest['expertises']=exps 
+        return Response(serializer.data)
+    
 
 
