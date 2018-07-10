@@ -113,17 +113,8 @@ class DeleteQuestionSerializer(serializers.ModelSerializer):
         model = QuestionForm 
         fields = ('key', 'question_id')   
 
-class ExpertiseSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Expertise
-        fields = ('expertises')
-
     
 class GetQuestionSerializer(serializers.ModelSerializer):
-    #expertise = ExpertiseSerializer(many=True, read_only= True)
-    
     class  Meta:
         model = QuestionForm
-        #fields = ('user', 'title', 'content', 'expertise', 'expertises')  
         fields = '__all__'  

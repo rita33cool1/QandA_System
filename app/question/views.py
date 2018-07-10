@@ -19,8 +19,15 @@ from rest_framework.authtoken.models import Token
 
 ##--------------------API-------------------##
 success_msg = 'Success'
-error_message = 'Error'
+error_msg = 'Error'
 httpstatus = status.HTTP_200_OK
+
+def ParseErrorMsg(msg):
+    print(msg)
+    for k in msg.keys():
+        key = k
+        break
+    return msg[key][0]
 
 @api_view(['POST'])
 def PostQuestion(request, format='json'):
@@ -32,13 +39,16 @@ def PostQuestion(request, format='json'):
                 "question_id": question.id
                 }
         return Response(json, status=status.httpstatus)
-    json = {"msg": serializer.errors}
+    json = {
+            "msg": error_msg, 
+            "errorMsg": ParseErrorMsg(eserializer.errors)
+            }   
     return Response(json, status=httpstatus)
 
 @api_view(['POST'])
 def ModifyQuestion(request, format='json'):
     try: question_id = request.data['question_id']
-    except: error_msg = 'No question_id or format is wrong'
+    except: error_message = 'No question_id or format is wrong'
     else:
         if QuestionForm.objects.filter(id__exact=question_id):
             question_instance = QuestionForm.objects.get(id=question_id)
@@ -47,9 +57,9 @@ def ModifyQuestion(request, format='json'):
                 question = serializer.save()
                 json = {"msg": success_msg}
                 return Response(json, status=httpstatus)
-            else: error_msg = serializer.errors
-        else: error_msg = 'This question_id does not exist.'
-    json = {"msg": error_msg}
+            else: error_message = ParseErrorMsg(serializer.errors)
+        else: error_message = 'This question_id does not exist.'
+    json = {"msg": error_msg, "errorMsg": error_message}
     return Response(json, status=httpstatus)
 
 @api_view(['POST'])
@@ -63,9 +73,9 @@ def DeleteQuestion(request, format='json'):
             question.delete()
             json = {"msg": success_msg}
             return Response(json, status=httpstatus)
-        else: error_msg = 'The author of the question does not match the token.'
-    else: error_msg = serializer.errors
-    json = {"msg": error_msg}
+        else: error_message = 'The author of the question does not match the token.'
+    else: error_message = ParseErrorMsg(serializer.errors)
+    json = {"msg": error_msg, "errorMsg": error_message}
     return Response(json, status=httpstatus)
 
 
@@ -99,11 +109,11 @@ def GetQuestion(request, pk):
         return Response(json, status=httpstatus)
     else:
         if not QuestionForm.objects.filter(id=pk):
-            error_msg = 'Wrong question id'
+            error_message = 'Wrong question id'
         else:
             json =GetQuestionByID(pk)
             return Response(json, status=httpstatus)
-        json = {"msg": error_msg}
+        json = {"msg": error_msg, "errorMsg": error_message}
         return Response(json, status=httpstatus)
 
 
@@ -134,7 +144,11 @@ class GetQuestionList(generics.ListAPIView):
             exps = []
             for eid in quest['expertises']:
                 exps.append(Expertise.objects.get(id=eid).expertise)
-            quest['expertises']=exps 
+            quest['expertises'] = exps
+            quest['username'] = quest['user'] 
+            del quest['user'] 
+            quest['question_id'] = quest['id'] 
+            del quest['id'] 
         return Response(serializer.data)
     
 

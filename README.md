@@ -66,7 +66,7 @@ Reply
   
 ## User
 ### Register  
-Url: POST http://localhost:8000/api/user/register/  
+POST **/api/user/register/**  
 I/O format: json  
 Input:  
 
@@ -92,7 +92,7 @@ Response details:
 
 ---
 ### Login  
-Url: POST http://localhost:8000/api/user/login/  
+POST **/api/user/login/**  
 I/O format: json  
 Input:  
     
@@ -120,7 +120,7 @@ Response details:
 
 ---
 ## Get Profile  
-Url: POST http://localhost:8000/api/user/profile/  
+POST **/api/user/profile/**  
 I/O format: json  
 Input:  
     
@@ -144,7 +144,7 @@ Response details:
 
 ---
 ### Set Profile
-Url: POST http://localhost:8000/api/user/profile/update/  
+POST **/api/user/profile/update/**  
 I/O format: json  
 Input:  
     
@@ -161,23 +161,82 @@ Response:
     {
         "msg": <message>
     }
+
+---
+### Get User list and Search User
+POST **/api/users/list/?username=<username>/**  
+Url examples:
++ GET **/api/users/list/** 
+    + Get all users.
++ GET **/api/users/list/?username=<username>** 
+    + Get all the users whose names containes <username>
+
+
+Input details:   
+**<username>** -- String  
+Response format: json  
+Response:  
+
+    [
+        {
+            "username": String,
+            "id": Integer
+        },
+        :
+        :
+    ]
     
 ---
 ## Question
 ### Post Question
-Url: POST http://localhost:8000/api/question/post/  
+POST **/api/question/post/**  
+I/O format: json  
+Input:  
+    
+    {
+        "key": String, 
+        "title": String, 
+        "content": String, "hashtags": ["tag1", "tag2"]}
+    }
 
 ---
 ### Modify Question
-Url: POST http://localhost:8000/api/question/edit/  
+POST **/api/question/edit/**  
+I/O format: json  
+Input:  
+
+    {
+        "key": String, 
+        "question_id": Integer, 
+        "title": String, 
+        "content": String, 
+        "expertises": StringList
+    }
+Input details:  
+**key** -- (require)  
+**question_id** -- (require)  
+**title** -- (**Not** require)  
+**content** -- (**Not** require)  
+**expertise** -- (**Not** require)  
+    String list with non-fixed length, ex. ["expertise1", "expertise2", "question3"]  
 
 ---
 ### Delete Question
-Url: POST http://localhost:8000/api/question/delete/  
+POST **/api/question/delete/**  
+I/O format: json  
+Input:  
+
+    {
+        "key": String, 
+        "question_id": Integer
+    }
+Input details:  
+**key** -- (require)  
+**question_id** -- (require)  
 
 ---
 ### Get Question
-Url: GET http://localhost:8000/api/question/<question_id>/  
+GET **/api/question/<question_id>/**  
 Response format: json  
 Response:  
 
@@ -193,10 +252,14 @@ Response:
     }
 **expertises** --  
     Integer list with non-fixed length.   
+**modify_date** --
+    DateString. Ex. "2018-07-09T02:43:25.360641+08:00"
+**create_date** --
+    DateString. Ex. "2018-07-09T02:43:25.360641+08:00"
 
 ---
-### Get All Questions
-Url: GET http://localhost:8000/api/question/0/  
+### Get All Questions 
+GET **/api/question/0/**  
 Response format: json  
 Response:  
 
@@ -206,6 +269,48 @@ Response:
     }
 **question_ids** --  
     Integer list with non-fixed length.   
+
+### Get and Search Questions
+GET **/api/questions/?uid=<user_id>&qid=<question_id>/**
+Url examples:
++ GET **/api/questions/**
+    + Get all questions.
++ GET **/api/question/?uid=<user_id>/**
+    + Get all the questions of the user whose id is <user_id>
++ GET **/api/question/?qid=<question_id>/**
+    + Get the question whose id is <question_id>
++ GET **/api/questions/?uid=<user_id>&qid=<question_id>/**
+    + Get the question whose question_id is <question_id> (but the user id of the question should equal to <user_id>)
+
+Input details:   
+**<user_id>** -- Integer  
+**<question_id>** -- Integer  
+
+Response format: json  
+Response:  
+
+    [
+        {
+            "user_id": Integer,
+            "username": String,
+            "question_id": Integer,
+            "title": String,
+            "content": String,
+            "create_date": DateString,
+            "mod_date": DateString,
+            "reply_number": Integer,
+            "expertises": StringList
+            
+        },
+        :
+        :
+    ]
+**create_date** --  
+    DateString. Ex. "2018-07-09T02:43:25.360641+08:00"
+**modify_date** --  
+    DateString. Ex. "2018-07-09T02:43:25.360641+08:00"  
+**expertise** --   
+    String list with non-fixed length, ex. ["test", "C++"]  
 
 ---
 ## Reply
