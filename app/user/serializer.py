@@ -14,12 +14,10 @@ class UserSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
             label='Email',
             required=True,
-            validators=[UniqueValidator(queryset=User.objects.all())]
             )
     username = serializers.CharField(
             label='Username',
             required=True,
-            validators=[UniqueValidator(queryset=User.objects.all())]
             )
     password = serializers.CharField(
             label='Password', 
@@ -27,7 +25,17 @@ class UserSerializer(serializers.ModelSerializer):
             max_length=32,
             required=True, 
             write_only=True)
-   
+  
+    def validate_username(self, username):
+        if User.objects.filter(username=username):
+            raise serializers.ValidationError('This username has been registered, please choose another one.')
+        return username    
+     
+    def validate_email(self, email):
+        if User.objects.filter(email=email):
+            raise serializers.ValidationError('This email has been registered, please choose another one.')
+        return email 
+
     def create(self, validated_data):
         if not email_check(validated_data['email']):
             raise serializers.ValidationError("Your email format is wrong!")
@@ -50,15 +58,13 @@ class LoginSerializer(serializers.ModelSerializer):
             max_length=32,
             required=True
             )
+    
     def validate_username(self, username):
-        print('validates username: ', username)
-            
         filter_result = User.objects.filter(username__exact=username)
         if not filter_result:
             raise serializers.ValidationError("This username does not exist. Please register first.")
-
         return username
-
+    
     class Meta:
         model = User
         fields = ('username', 'password')    
@@ -80,20 +86,44 @@ class TokenSerializer(serializers.ModelSerializer):
         model = Token
         fields = ('key','user_id')    
 
-class SetProfileSerializer(serializers.ModelSerializer):
+class SetExpertiseSerializer(serializers.ModelSerializer):
     expertises = serializers.ListField(
             child=serializers.CharField(max_length=32),
             )
-    
+
+#    def validate_expertises(self, expertises):
+#        if len(expertises) == 0:
+#            raise serializers.ValidationError('Please enter the new expertises')
+#        return expertises    
+
     class Meta:
         model = UserProfile
         fields = (['expertises'])    
+
+class AddFriendSerializer(serializers.ModelSerializer):
+    friends = serializers.ListField(
+            child=serializers.CharField(),
+            )
+
+    def validate_friends(self, friends):
+        if len(friends) == 0:
+            raise serializers.ValidationError('Please enter the new friends')
+        else:
+            for f in friends:
+                if not User.objects.filter(username__exact=f):
+                    raise serializers.ValidationError('The user '+f+' is not exist')        
+        return friends
+
+    class Meta:
+        model = UserProfile
+        fields = (['friends'])    
 
 class ExpertiseSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Expertise
         fields = ('expertise')
+
 class GetUserProfileSerializer(serializers.ModelSerializer):
     expertises = ExpertiseSerializer(many=True, read_only= True)
     class Meta:

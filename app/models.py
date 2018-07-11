@@ -14,6 +14,8 @@ class Expertise(models.Model):
     majorities = (choices=majority_types)
 """
 
+class Friend(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='friend')
 
 
 
@@ -23,14 +25,13 @@ class UserProfile(models.Model):
 
     expertises = models.ManyToManyField(Expertise)
 
+    friends = models.ManyToManyField(Friend)
+
     class Meta:
         verbose_name = 'User Profile'
 
     def __str__(self):
         return "{}".format(self.user.__str__())
-
-class Hashtag(models.Model):
-    hashtag = models.CharField(max_length=32)
 
 
 class QuestionForm(models.Model):
