@@ -131,28 +131,31 @@ def GetProfile(request, format='json'):
 
 @api_view(['POST'])
 def AddFriend(request, format='json'):
-    token_serializer = TokenSerializer(data=request.data)
-    friend_serializer = AddFriendSerializer(data=request.data)
-    if token_serializer.is_valid():
-        token_key = token_serializer.data['key']
+    serializer = AddFriendSerializer(data=request.data)
+    blank = False
+    for f in request.data['friends']:
+        if f == '': blank = True
+    if request.data['key'] == '':    
+        error_msg = 'key cannot be blank.'
+    elif blank: 
+        error_msg = 'friends cannot be blank.'
+    elif serializer.is_valid():
+        token_key = serializer.data['key']
         token = Token.objects.get(key=token_key)
-        if friend_serializer.is_valid():
-            friend_list = friend_serializer.data['friends']
-            profile = UserProfile.objects.get(user_id=token.user_id)
-            for f in friend_list:
-                print('f', f)
-                user = User.objects.get(username=f)
+        friend_list = serializer.data['friends']
+        profile = UserProfile.objects.get(user_id=token.user_id)
+        for f in friend_list:
+            user = User.objects.get(username=f)
+            if Friend.objects.filter(user_id__exact=user.id):
+                friend = Friend.objects.get(user_id=user.id)
+            else:
                 friend = Friend(user=user)
                 friend.save()
-                profile.save()
-                profile.friends.add(friend)
-            json = {'msg': success_message}
-            return Response(json, status=httpstatus)
-    print('token: ', token_serializer.errors)
-    print('friend: ', friend_serializer.errors)
-    if ParseErrorMsg(token_serializer.errors) == None:
-        error_msg = ParseErrorMsg(friend_serializer.errors)
-    else: error_msg = ParseErrorMsg(token_serializer.errors)
+            profile.save()
+            profile.friends.add(friend)
+        json = {'msg': success_message}
+        return Response(json, status=httpstatus)
+    else: error_msg = ParseErrorMsg(serializer.errors)
     json = {'msg':error_message, 'errorMsg': error_msg}
     return Response(json, status=httpstatus)
 
