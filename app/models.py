@@ -15,7 +15,7 @@ class Expertise(models.Model):
 """
 
 class Friend(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='friend')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='friend', unique=True)
 
 
 
