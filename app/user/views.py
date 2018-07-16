@@ -18,6 +18,7 @@ from .serializer import TokenSerializer
 from .serializer import SetExpertiseSerializer
 from .serializer import GetUserListSerializer
 from .serializer import AddFriendSerializer
+from .serializer import DelFriendSerializer
 from rest_framework.authtoken.models import Token
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -153,6 +154,31 @@ def AddFriend(request, format='json'):
                 friend.save()
             profile.save()
             profile.friends.add(friend)
+        json = {'msg': success_message}
+        return Response(json, status=httpstatus)
+    else: error_msg = ParseErrorMsg(serializer.errors)
+    json = {'msg':error_message, 'errorMsg': error_msg}
+    return Response(json, status=httpstatus)
+
+@api_view(['POST'])
+def DelFriend(request, format='json'):
+    serializer = DelFriendSerializer(data=request.data)
+    blank = False
+    for f in request.data['friends']:
+        if f == '': blank = True
+    if request.data['key'] == '':    
+        error_msg = 'key cannot be blank.'
+    elif blank: 
+        error_msg = 'friends cannot be blank.'
+    elif serializer.is_valid():
+        token_key = serializer.data['key']
+        token = Token.objects.get(key=token_key)
+        friend_list = serializer.data['friends']
+        profile = UserProfile.objects.get(user_id=token.user_id)
+        for f in friend_list:
+            user = User.objects.get(username=f)
+            friend = Friend.objects.get(user_id=user.id)
+            profile.friends.remove(friend)
         json = {'msg': success_message}
         return Response(json, status=httpstatus)
     else: error_msg = ParseErrorMsg(serializer.errors)
