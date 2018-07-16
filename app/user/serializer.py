@@ -3,6 +3,7 @@ from rest_framework.validators import UniqueValidator
 from django.contrib.auth.models import User
 from ..models import UserProfile
 from ..models import Expertise
+from ..models import QuestionForm
 from rest_framework.authtoken.models import Token
 import re
 
@@ -185,10 +186,16 @@ class DelFriendSerializer(serializers.ModelSerializer):
         fields = ('key', 'friends')    
 
 class ExpertiseSerializer(serializers.ModelSerializer):
-    
     class Meta:
         model = Expertise
-        fields = ('expertise')
+        #fields = '__all__'
+        fields = ('expertise',)
+
+class GetExpertiseListSerializer(serializers.ModelSerializer):
+    expertises = ExpertiseSerializer(many=True, read_only= True)
+    class Meta:
+        model = UserProfile
+        fields = ('user_id', 'expertises')
 
 class GetUserProfileSerializer(serializers.ModelSerializer):
     expertises = ExpertiseSerializer(many=True, read_only= True)
@@ -201,3 +208,10 @@ class GetUserListSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('username', 'id', 'users')
+
+                            
+class GetQuestionSerializer(serializers.ModelSerializer):
+    expertises = ExpertiseSerializer(many=True, read_only= True)
+    class Meta:
+        model = QuestionForm
+        fields = ('id', 'user_id', 'expertises')

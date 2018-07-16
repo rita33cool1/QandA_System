@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from ..models import UserProfile
 from ..models import Expertise
 from ..models import Friend
+from ..models import QuestionForm
 from django.contrib import auth
 from django.http import HttpResponseRedirect
 from django.urls import reverse
@@ -9,18 +10,21 @@ from django.http import HttpResponseNotFound
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
 from rest_framework import status
 from rest_framework import generics
 from rest_framework import filters
 from .serializer import UserSerializer
 from .serializer import LoginSerializer
 from .serializer import TokenSerializer
+from .serializer import ExpertiseSerializer
 from .serializer import SetExpertiseSerializer
+from .serializer import GetExpertiseListSerializer
+from .serializer import GetQuestionSerializer
 from .serializer import GetUserListSerializer
 from .serializer import AddFriendSerializer
 from .serializer import DelFriendSerializer
-from rest_framework.authtoken.models import Token
-from django_filters.rest_framework import DjangoFilterBackend
+#from django_filters.rest_framework import DjangoFilterBackend
 
 ##--------------------API-------------------##
 success_message = 'Success'
@@ -101,6 +105,21 @@ def UserLogin(request, format='json'):
             "errorMsg": error_msg
             }
     return Response(json, status=httpstatus)
+
+class GetUserList(generics.ListAPIView):
+    serializer_class = GetUserListSerializer
+    lookup_url_kwarg = "username"
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('username')
+    def get_queryset(self):
+        queryset = User.objects.all()
+        username = self.request.query_params.get('username', None)
+        if username is not None:
+            return queryset.filter(username__contains=username)
+            
+        else:
+            return queryset
+
 @api_view(['POST'])
 def GetProfile(request, format='json'):
     serializer = TokenSerializer(data=request.data)
@@ -197,8 +216,11 @@ def SetExpertise(request, format='json'):
             profile = UserProfile.objects.get(user_id=token.user_id)
             profile.expertises.clear()
             for exp in expertise_str:
-                exper = Expertise(expertise=exp)
-                exper.save()
+                if Expertise.objects.filter(expertise__exact=exp):
+                    exper = Expertise.objects.get(expertise=exp)
+                else:
+                    exper = Expertise(expertise=exp)
+                    exper.save()
                 profile.save()
                 profile.expertises.add(exper)
             json = {'msg': success_message} #, 'expertise':exps}
@@ -209,16 +231,102 @@ def SetExpertise(request, format='json'):
     json = {'msg':error_message, 'errorMsg': error_msg}
     return Response(json, status=httpstatus)
 
-class GetUserList(generics.ListAPIView):
-    serializer_class = GetUserListSerializer
-    lookup_url_kwarg = "username"
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('username')
-    def get_queryset(self):
-        queryset = User.objects.all()
-        username = self.request.query_params.get('username', None)
-        if username is not None:
-            return queryset.filter(username__contains=username)
-            
+def RemoveDuplic(datas):
+    no_du_data = []
+    for data in datas:
+        if len(no_du_data)==0:
+            no_du_data.append(data)
         else:
+            is_duplic = False
+            for nd_data in no_du_data:
+                if data == nd_data:
+                    is_duplic = True
+                    break
+            if not is_duplic:
+                no_du_data.append(data)
+    return no_du_data
+
+class GetExpertiseList(generics.ListAPIView):
+    serializer_class = GetExpertiseListSerializer
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('expertises__expertise')
+    def get_queryset(self):
+        queryset = Expertise.objects.all()
+        exp = self.request.query_params.get('exp', None)
+        if exp is None:
             return queryset
+        else:
+            #return queryset.filter(expertises__contains=exp)
+            return queryset.filter(expertise__contains=exp)
+
+    def get_queryset_user(self):
+        queryset = UserProfile.objects.all()
+        exp = self.request.query_params.get('exp', None)
+        if exp is None:
+            return queryset
+        else:
+            #return queryset.filter(expertises__contains=exp)
+            return queryset.filter(expertises__expertise__contains=exp)
+
+    def get_queryset_question(self):
+        queryset = QuestionForm.objects.all()
+        exp = self.request.query_params.get('exp', None)
+        if exp is None:
+            return queryset
+        else:
+            return queryset.filter(expertises__expertise__contains=exp)
+
+    def list(self, request):
+        expertise = self.request.query_params.get('exp', None)
+        queryset = self.get_queryset()
+        queryset_user = self.get_queryset_user()
+        queryset_question = self.get_queryset_question()
+        serializer = GetExpertiseListSerializer(queryset, many=True)
+        exps = []
+        users = []
+        questions = []
+        for exp in queryset.values():
+            category = {
+                        "expertise": exp['expertise'],
+                        "users": users,
+                        "questions": questions
+                        }
+            exps.append(category)
+        # response related user
+        serializer = GetExpertiseListSerializer(queryset_user, many=True)
+        for ori_data in RemoveDuplic(serializer.data):
+            if len(ori_data['expertises']) > 0:
+                for ori_exp in ori_data['expertises']:
+                    for exp in exps:
+                        if ori_exp['expertise'] == exp['expertise']:
+                            user = []
+                            for u in exp['users']:
+                                user.append(u)
+                            user.append({
+                                "user_id": ori_data['user_id'],
+                                "username": User.objects.get(id=ori_data['user_id']).username
+                                })
+                            exp['users'] = user
+                            break
+        # response related question
+        serializer = GetQuestionSerializer(queryset_question, many=True)
+        for ori_data in RemoveDuplic(serializer.data):
+        #for ori_data in serializer.data:
+            if len(ori_data['expertises']) > 0:
+                for ori_exp in ori_data['expertises']:
+                    for exp in exps:
+                        if ori_exp['expertise'] == exp['expertise']:
+                            user = []
+                            for u in exp['questions']:
+                                user.append(u)
+                            user.append({
+                                "question_id": ori_data['id'],
+                                "title": QuestionForm.objects.get(id=ori_data['id']).title,
+                                "user_id": ori_data['user_id'],
+                                "username": User.objects.get(id=ori_data['user_id']).username
+                                })
+                            exp['questions'] = user
+                            break
+        return Response(exps)
+
+

@@ -4,7 +4,7 @@ from jsonfield import JSONField
 #import collections
 
 class Expertise(models.Model):
-    expertise = models.CharField(max_length=32, blank=True)
+    expertise = models.CharField(max_length=32, blank=True, unique=True)
 """
     majority_types = (
         ('MATH', 'math'),
