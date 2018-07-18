@@ -7,7 +7,7 @@ This server is developed on Django 2.0 and uses MySQL as database.
 Environment: Linux 16.04  
 Developed Language: Python 3.5  
 Django version: 2.0.6  
-MySQL version: 14.14  
+MySQL version: Ver 14.14 Distrib 5.7.22  
 Data encolding: utf8  
 Server display language: zh-TW  
 
@@ -27,13 +27,11 @@ QandA_System/
 │   ├── question
 │   |   ├── serializer.py
 │   |   └── views.py
-│   ├── serializer.py
 │   ├── tests.py
 │   ├── urls.py
-│   ├── user
-│   │   ├── serializer.py
-│   │   └── views.py
-│   └── views.py
+│   └── user
+│       ├── serializer.py
+│       └── views.py
 ├── manage.py
 ├── QandA_System
 │     ├── __init__.py
@@ -48,7 +46,11 @@ User
 + Register
 + Login
 + Set User Profile
-+ Get User Profile
++ Get User Expertise
++ Search Expertise
++ Get User list and Search User
++ Add Friends to Users
++ Delete Friends of Users
 
 Question
 - Post Question
@@ -56,6 +58,7 @@ Question
 - Get Question
 - Delete Question
 - Get All Questions
+- Get and Search Questions
 
 Reply
 * Post Reply
@@ -86,9 +89,12 @@ Response:
         "msg": String
     }
 Response details:  
-**message** --  
-+ "Success": If register successfully.
-+ Error message
+**msg** --  
++ 'Success': If successful.
++ 'Error': If failed.
+
+**"ErrorMsg"** (When `"msg": "Error"`) --
+String, reasons why It is faild.
 
 ---
 ### Login  
@@ -111,15 +117,18 @@ Response:
         "key": String
     }
 Response details:  
-**message** --  
-+ "Success": If login successfully.
-+ Error message
+**msg** --  
++ 'Success': If successful.
++ 'Error': If failed.
+
+**"ErrorMsg"** (When `"msg": "Error"`) --
+String, reasons why It is faild.
 
 **key** --  
     Use as logined authority  
 
 ---
-## Get Profile  
+### Get User Profile  
 POST **/api/user/profile/**  
 I/O format: json  
 Input:  
@@ -136,14 +145,17 @@ Response:
         "msg": String,
         "username": String,
         "expertise": StringList,
-        "email": EmailString
+        "email": EmailString,
+        "friends": StringList
     }
 Response details:  
 **expertises** --  
     String list with non-fixed length, ex. ["expertise1", "expertise2"]  
+**friends** -- (require)  
+    String list with non-fixed length, ex. ["foobar2", "foobar12"]. Every String Should be an existing username.  
 
 ---
-### Set Profile
+### Set User Expertise  
 POST **/api/user/profile/update/**  
 I/O format: json  
 Input:  
@@ -155,11 +167,90 @@ Input:
 Input details:  
 **key** -- (require)  
 **expertise** -- (require)  
-    String list with non-fixed length, ex. ["expertise1", "expertise2", "question3]  
+    String list with non-fixed length, ex. ["expertise1", "expertise2"]  
 Response:  
 
     {
-        "msg": <message>
+        "msg": String
+    }
+
+---
+### Search Expertise
+GET **/api/expertises/search?key=<expertise>**
+Url examples:
++ **/api/expertises/search**
+    + Get all expertises, and users and questions related to them 
++ **/api/expertises/search?key=<expertise>**
+    + Get all expertises containing <expertise>, and users and questions related to these expertises. 
+    
+Input details:   
+**<expertise>** -- String  
+Response format: json  
+Response:  
+    
+    [
+        {
+            "expertise": String,
+            "questions": [
+                {
+                    "question_id": Integer,
+                    "user_id": Integer,
+                    "username": String,
+                    "title": String
+                },
+                :
+                :
+            ],
+            "users": [
+                {
+                    "user_id": Integer,
+                    "username": String
+                },
+                :
+                :
+            ]
+        }
+        :
+        :
+    ]
+---
+### Add Friends to Users
+POST **/api/user/friend/add/**  
+I/O format: json  
+Input:  
+    
+    {
+        "key": String,
+        "friends": StringList
+    {
+Input details:  
+**key** -- (require)  
+**friends** -- (require)  
+    String list with non-fixed length, ex. ["foobar2", "foobar12"]. Every String Should be an existing username.  
+Response:  
+
+    {
+        "msg": String
+    }
+
+---
+### Delete Friends of Users
+POST **/api/user/friend/delete/**  
+I/O format: json  
+Input:  
+    
+    {
+        "key": String,
+        "friends": StringList
+    {
+Input details:  
+**key** -- (require)  
+**friends** -- (require)  
+    String list with non-fixed length, ex. ["foobar2", "foobar12"]. Every String Should be an existing username.  
+Response:  
+
+    {
+        "msg": String
     }
 
 ---
@@ -170,7 +261,6 @@ Url examples:
     + Get all users.
 + GET **/api/users/list/?username=<username>** 
     + Get all the users whose names containes <username>
-
 
 Input details:   
 **<username>** -- String  
@@ -304,9 +394,9 @@ Response:
         },
         :
         :
-    ]
+    ]  
 **create_date** --  
-    DateString. Ex. "2018-07-09T02:43:25.360641+08:00"
+    DateString. Ex. "2018-07-09T02:43:25.360641+08:00"  
 **modify_date** --  
     DateString. Ex. "2018-07-09T02:43:25.360641+08:00"  
 **expertise** --   
