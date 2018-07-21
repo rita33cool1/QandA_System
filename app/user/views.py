@@ -106,6 +106,12 @@ def UserLogin(request, format='json'):
             }
     return Response(json, status=httpstatus)
 
+def getEleFromM2Mfield(all_objs, field):
+    all_list = []
+    for ele in all_objs:
+        all_list.append(ele[field])
+    return all_list
+
 class GetUserList(generics.ListAPIView):
     serializer_class = GetUserListSerializer
     lookup_url_kwarg = "username"
@@ -116,9 +122,22 @@ class GetUserList(generics.ListAPIView):
         username = self.request.query_params.get('username', None)
         if username is not None:
             return queryset.filter(username__contains=username)
-            
         else:
             return queryset
+
+    def list(self, request):
+        queryset = self.get_queryset()
+        serializer = GetUserListSerializer(queryset, many=True)
+        for ori_data in serializer.data:
+            ori_data['user_id'] = ori_data['id']
+            del ori_data['id']
+            user = User.objects.get(id=ori_data['user_id'])
+            profile = UserProfile.objects.get(user_id=ori_data['user_id'])
+            ori_data['email'] = user.email
+            ori_data['friends'] = getEleFromM2Mfield(profile.friends.all().values(), 'friend')
+            ori_data['expertises'] = getEleFromM2Mfield(profile.expertises.all().values(), 'expertise')
+            
+        return Response(serializer.data)
 
 @api_view(['POST'])
 def GetProfile(request, format='json'):
@@ -162,17 +181,18 @@ def AddFriend(request, format='json'):
     elif serializer.is_valid():
         token_key = serializer.data['key']
         token = Token.objects.get(key=token_key)
-        friend_list = serializer.data['friends']
+        #friend_list = serializer.data['friends']
+        friend = serializer.data['friend']
         profile = UserProfile.objects.get(user_id=token.user_id)
-        for f in friend_list:
-            user = User.objects.get(username=f)
-            if Friend.objects.filter(user_id__exact=user.id):
-                friend = Friend.objects.get(user_id=user.id)
-            else:
-                friend = Friend(user=user)
-                friend.save()
-            profile.save()
-            profile.friends.add(friend)
+        #for f in friend_list:
+        user = User.objects.get(username=friend)
+        if Friend.objects.filter(user_id__exact=user.id):
+            friend = Friend.objects.get(user_id=user.id)
+        else:
+            friend = Friend(user=user)
+            friend.save()
+        profile.save()
+        profile.friends.add(friend)
         json = {'msg': success_message}
         return Response(json, status=httpstatus)
     else: error_msg = ParseErrorMsg(serializer.errors)
@@ -252,7 +272,7 @@ class GetExpertiseList(generics.ListAPIView):
     search_fields = ('expertises__expertise')
     def get_queryset(self):
         queryset = Expertise.objects.all()
-        exp = self.request.query_params.get('exp', None)
+        exp = self.request.query_params.get('key', None)
         if exp is None:
             return queryset
         else:
@@ -261,7 +281,7 @@ class GetExpertiseList(generics.ListAPIView):
 
     def get_queryset_user(self):
         queryset = UserProfile.objects.all()
-        exp = self.request.query_params.get('exp', None)
+        exp = self.request.query_params.get('key', None)
         if exp is None:
             return queryset
         else:
@@ -270,14 +290,14 @@ class GetExpertiseList(generics.ListAPIView):
 
     def get_queryset_question(self):
         queryset = QuestionForm.objects.all()
-        exp = self.request.query_params.get('exp', None)
+        exp = self.request.query_params.get('key', None)
         if exp is None:
             return queryset
         else:
             return queryset.filter(expertises__expertise__contains=exp)
 
     def list(self, request):
-        expertise = self.request.query_params.get('exp', None)
+        expertise = self.request.query_params.get('key', None)
         queryset = self.get_queryset()
         queryset_user = self.get_queryset_user()
         queryset_question = self.get_queryset_question()
