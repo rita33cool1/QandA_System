@@ -4,10 +4,10 @@ from ..models import Expertise
 from ..models import Friend
 from ..models import QuestionForm
 from django.contrib import auth
-from django.http import HttpResponseRedirect
-from django.urls import reverse
-from django.http import HttpResponseNotFound
-from rest_framework.views import APIView
+#from django.http import HttpResponseRedirect
+#from django.urls import reverse
+#from django.http import HttpResponseNotFound
+#from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
@@ -22,8 +22,6 @@ from .serializer import SetExpertiseSerializer
 from .serializer import GetExpertiseListSerializer
 from .serializer import GetQuestionSerializer
 from .serializer import GetUserListSerializer
-from .serializer import AddFriendSerializer
-from .serializer import DelFriendSerializer
 #from django_filters.rest_framework import DjangoFilterBackend
 
 ##--------------------API-------------------##
@@ -108,8 +106,12 @@ def UserLogin(request, format='json'):
 
 def getEleFromM2Mfield(all_objs, field):
     all_list = []
-    for ele in all_objs:
-        all_list.append(ele[field])
+    if field == '':
+        for ele in all_objs:
+            all_list.append(ele)
+    else:
+        for ele in all_objs:
+            all_list.append(ele[field])
     return all_list
 
 class GetUserList(generics.ListAPIView):
@@ -153,12 +155,22 @@ def GetProfile(request, format='json'):
         friends = []
         for f in profile.friends.all():
             friends.append(f.user.username)
+        expected_friends = []
+        print(profile.expected_friends.all())
+        for f in profile.expected_friends.all():
+            expected_friends.append(f.user.username)
+        friend_requests = []
+        print(profile.friend_requests.all())
+        for f in profile.friend_requests.all():
+            friend_requests.append(f.user.username)
         json = {
                 'msg': success_message, 
                 'username': user.username, 
                 'email':user.email, 
                 'expertise':exps,
-                'friends': friends
+                'friends': friends,
+                'expected_friends': expected_friends,
+                'friend_requests': friend_requests
                 }
         return Response(json, status=httpstatus)
     
@@ -166,62 +178,6 @@ def GetProfile(request, format='json'):
             'msg': error_message,
             'errorMsg': ParseErrorMsg(serializer.errors)
             }       
-    return Response(json, status=httpstatus)
-
-@api_view(['POST'])
-def AddFriend(request, format='json'):
-    serializer = AddFriendSerializer(data=request.data)
-    blank = False
-    for f in request.data['friends']:
-        if f == '': blank = True
-    if request.data['key'] == '':    
-        error_msg = 'key cannot be blank.'
-    elif blank: 
-        error_msg = 'friends cannot be blank.'
-    elif serializer.is_valid():
-        token_key = serializer.data['key']
-        token = Token.objects.get(key=token_key)
-        #friend_list = serializer.data['friends']
-        friend = serializer.data['friend']
-        profile = UserProfile.objects.get(user_id=token.user_id)
-        #for f in friend_list:
-        user = User.objects.get(username=friend)
-        if Friend.objects.filter(user_id__exact=user.id):
-            friend = Friend.objects.get(user_id=user.id)
-        else:
-            friend = Friend(user=user)
-            friend.save()
-        profile.save()
-        profile.friends.add(friend)
-        json = {'msg': success_message}
-        return Response(json, status=httpstatus)
-    else: error_msg = ParseErrorMsg(serializer.errors)
-    json = {'msg':error_message, 'errorMsg': error_msg}
-    return Response(json, status=httpstatus)
-
-@api_view(['POST'])
-def DelFriend(request, format='json'):
-    serializer = DelFriendSerializer(data=request.data)
-    blank = False
-    for f in request.data['friends']:
-        if f == '': blank = True
-    if request.data['key'] == '':    
-        error_msg = 'key cannot be blank.'
-    elif blank: 
-        error_msg = 'friends cannot be blank.'
-    elif serializer.is_valid():
-        token_key = serializer.data['key']
-        token = Token.objects.get(key=token_key)
-        friend_list = serializer.data['friends']
-        profile = UserProfile.objects.get(user_id=token.user_id)
-        for f in friend_list:
-            user = User.objects.get(username=f)
-            friend = Friend.objects.get(user_id=user.id)
-            profile.friends.remove(friend)
-        json = {'msg': success_message}
-        return Response(json, status=httpstatus)
-    else: error_msg = ParseErrorMsg(serializer.errors)
-    json = {'msg':error_message, 'errorMsg': error_msg}
     return Response(json, status=httpstatus)
 
 @api_view(['POST'])
