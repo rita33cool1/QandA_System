@@ -7,6 +7,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework import status
 from rest_framework import generics
 from rest_framework import filters
+from .serializer import DelFriendSerializer
 from .serializer import AddFriendRequestSerializer
 from .serializer import ConfirmFriendRequestSerializer
 
@@ -15,7 +16,7 @@ success_message = 'Success'
 error_message = 'Error'
 httpstatus = status.HTTP_200_OK
 def ParseErrorMsg(msg):
-    print(msg)
+    #print(msg)
     if len(msg.keys()) == 0:
         return None
     for k in msg.keys():
@@ -87,33 +88,24 @@ def ConfirmFriendRequest(request, format='json'):
     json = {'msg':error_message, 'errorMsg': error_msg}
     return Response(json, status=httpstatus)
 
-
-
-"""
 @api_view(['POST'])
 def DelFriend(request, format='json'):
     serializer = DelFriendSerializer(data=request.data)
-    blank = False
-    for f in request.data['friends']:
-        if f == '': blank = True
-    if request.data['key'] == '':    
-        error_msg = 'key cannot be blank.'
-    elif blank: 
-        error_msg = 'friends cannot be blank.'
-    elif serializer.is_valid():
+    if serializer.is_valid():
         token_key = serializer.data['key']
         token = Token.objects.get(key=token_key)
-        friend_list = serializer.data['friends']
-        profile = UserProfile.objects.get(user_id=token.user_id)
-        for f in friend_list:
-            user = User.objects.get(username=f)
-            friend = Friend.objects.get(user_id=user.id)
-            profile.friends.remove(friend)
+        my_profile = UserProfile.objects.get(user_id=token.user_id)
+        user = User.objects.get(username=serializer.data['friend'])
+        obj_profile = UserProfile.objects.get(user_id=user.id)
+        my_friend = Friend.objects.get(user_id=user.id)
+        obj_friend = Friend.objects.get(user_id=token.user_id)
+        my_profile.friends.remove(my_friend)
+        obj_profile.friends.remove(obj_friend)
         json = {'msg': success_message}
         return Response(json, status=httpstatus)
     else: error_msg = ParseErrorMsg(serializer.errors)
     json = {'msg':error_message, 'errorMsg': error_msg}
     return Response(json, status=httpstatus)
-"""
+
 
 

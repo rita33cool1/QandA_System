@@ -15,8 +15,7 @@ urlpatterns = [
     
     url(r'social/friend/send/$', social_views.AddFriendRequest, name='send_friend_request'),
     url(r'social/friend/confirm/$', social_views.ConfirmFriendRequest, name='confirm_friend_request'),
-    #url(r'user/friend/add/$', social_views.AddFriend, name='add_friend'),
-    #url(r'user/friend/delete/$', social_views.DelFriend, name='delete_friend'),
+    url(r'user/friend/delete/$', social_views.DelFriend, name='delete_friend'),
     
     url(r'questions/list/$', quest_views.GetQuestionList.as_view(), name='question_list'),
     url(r'question/post/$', quest_views.PostQuestion, name='post_question'),

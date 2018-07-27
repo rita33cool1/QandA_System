@@ -30,8 +30,6 @@ class AddFriendRequestSerializer(serializers.ModelSerializer):
     def validate_replyer(self, replyer):
         try: user = User.objects.get(username=replyer)
         except: raise serializers.ValidationError('The user '+replyer+" does not exist")
-        #if not Token.objects.filter(user_id__exact=user.id):
-        #    raise serializers.ValidationError(replyer+" has not logined")
         return replyer
 
     def validate_key(self, key):
@@ -121,10 +119,10 @@ class ConfirmFriendRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ('action', 'key', 'requester', 'replyer')    
-"""
+
 class DelFriendSerializer(serializers.ModelSerializer):
-    friends = serializers.ListField(
-            child=serializers.CharField(),
+    friend = serializers.CharField(
+            required=True
             )
     key = serializers.CharField(
             label='token',
@@ -138,31 +136,26 @@ class DelFriendSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("This token does not exist")
         return key
     
-    def validate_friends(self, friends):
-        if len(friends) == 0:
-            raise serializers.ValidationError('Please enter the new friends')
-        else:
-            for f in friends:
-                if not User.objects.filter(username__exact=f):
-                    raise serializers.ValidationError('The user '+f+' is not exist')        
-        return friends
+    def validate_friend(self, friend):
+        if not User.objects.filter(username__exact=friend):
+            raise serializers.ValidationError('The user '+friend+' is not exist')        
+        return friend
 
     def validate(self, data):
         token = Token.objects.get(key=data['key'])
-        for f in data['friends']:
-            if User.objects.get(username=f).id == token.user_id:
-                raise serializers.ValidationError('Yourself is not your friend.')
-            else:
-                is_friend = False
-                for uf in UserProfile.objects.get(user_id=token.user_id).friends.all():
-                    if f == str(uf.user): 
-                        is_friend = True
-                        break
-                if not is_friend: raise serializers.ValidationError('The user '+f+' has not been your friend.')
+        if User.objects.get(username=data['friend']).id == token.user_id:
+            raise serializers.ValidationError('Yourself is not your friend.')
+        else:
+            is_friend = False
+            for uf in UserProfile.objects.get(user_id=token.user_id).friends.all():
+                if data['friend'] == str(uf.user): 
+                    is_friend = True
+                    break
+            if not is_friend: raise serializers.ValidationError('The user '+f+' has not been your friend.')
         return data
     
     class Meta:
         model = UserProfile
-        fields = ('key', 'friends')    
-"""
+        fields = ('key', 'friend')    
+
 
