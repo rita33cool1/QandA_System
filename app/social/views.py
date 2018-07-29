@@ -7,6 +7,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework import status
 from rest_framework import generics
 from rest_framework import filters
+from .serializer import FollowingSerializer
 from .serializer import DelFriendSerializer
 from .serializer import AddFriendRequestSerializer
 from .serializer import ConfirmFriendRequestSerializer
@@ -22,7 +23,10 @@ def ParseErrorMsg(msg):
     for k in msg.keys():
         key = k
         break
-    msg = key + ": " + msg[key][0]
+    if key == 'non_field_errors':
+        msg = msg[key][0]
+    else:
+        msg = key + ": " + msg[key][0]
     return msg
 
 def getEleFromM2Mfield(all_objs, field):
@@ -102,6 +106,36 @@ def DelFriend(request, format='json'):
         my_profile.friends.remove(my_friend)
         obj_profile.friends.remove(obj_friend)
         json = {'msg': success_message}
+        return Response(json, status=httpstatus)
+    else: error_msg = ParseErrorMsg(serializer.errors)
+    json = {'msg':error_message, 'errorMsg': error_msg}
+    return Response(json, status=httpstatus)
+
+@api_view(['POST'])
+def AddFollowing(request, format='json'):
+    serializer = FollowingSerializer(data=request.data)
+    blank = False
+    if serializer.is_valid():
+        token = Token.objects.get(key=serializer.data['key'])
+        follower = User.objects.get(id=token.user_id)
+        following = User.objects.get(username=serializer.data['following'])
+        following_profile = UserProfile.objects.get(user_id=following.id)
+        follower_profile = UserProfile.objects.get(user_id=follower.id)
+        if Friend.objects.filter(user_id__exact=follower.id):
+            follower_friend = Friend.objects.get(user_id=follower.id)
+        else:
+            follower_friend = Friend(user=follower)
+            follower_friend.save()    
+        if Friend.objects.filter(user_id__exact=following.id):
+            following_friend = Friend.objects.get(user_id=following.id)
+        else:
+            following_friend = Friend(user=following)
+            following_friend.save()    
+        follower_profile.save()
+        follower_profile.followings.add(following_friend)
+        following_profile.save()
+        following_profile.followers.add(follower_friend)
+        json = {"msg": success_message}
         return Response(json, status=httpstatus)
     else: error_msg = ParseErrorMsg(serializer.errors)
     json = {'msg':error_message, 'errorMsg': error_msg}

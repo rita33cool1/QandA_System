@@ -17,7 +17,13 @@ class Expertise(models.Model):
 class Friend(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='friend', unique=True)
 
+"""
+class ExpectedFriend(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='friend', unique=True)
 
+class FriendRequest(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='friend', unique=True)
+"""
 
 class UserProfile(models.Model):
 
@@ -25,7 +31,15 @@ class UserProfile(models.Model):
 
     expertises = models.ManyToManyField(Expertise)
 
-    friends = models.ManyToManyField(Friend)
+    friends = models.ManyToManyField(Friend, related_name='friend')
+
+    expected_friends = models.ManyToManyField(Friend, related_name='expected_friend')
+
+    friend_requests = models.ManyToManyField(Friend, related_name='friend_request')
+    
+    followers = models.ManyToManyField(Friend, related_name='follower')
+
+    followings = models.ManyToManyField(Friend, related_name='following_user')
 
     class Meta:
         verbose_name = 'User Profile'
