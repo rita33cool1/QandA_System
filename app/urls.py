@@ -17,6 +17,7 @@ urlpatterns = [
     url(r'social/friend/confirm/$', social_views.ConfirmFriendRequest, name='confirm_friend_request'),
     url(r'social/friend/delete/$', social_views.DelFriend, name='delete_friend'),
     url(r'social/following/add/$', social_views.AddFollowing, name='add_following'),
+    url(r'social/following/cancel/$', social_views.CancelFollowing, name='cancel_following'),
     
     url(r'questions/list/$', quest_views.GetQuestionList.as_view(), name='question_list'),
     url(r'question/post/$', quest_views.PostQuestion, name='post_question'),

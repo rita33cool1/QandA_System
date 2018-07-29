@@ -201,4 +201,47 @@ class FollowingSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = ('key', 'following')    
 
+class CancelFollowingSerializer(serializers.ModelSerializer):
+    following = serializers.CharField(
+            required=True
+            )
+    key = serializers.CharField(
+            label='token',
+            min_length=40,
+            max_length=40,
+            required=True
+            )
+
+    def validate_key(self, key):
+        if not Token.objects.filter(key__exact=key):
+            raise serializers.ValidationError("This token does not exist")
+        return key
+    
+    def validate_following(self, following):
+        if not User.objects.filter(username__exact=following):
+            raise serializers.ValidationError('The user '+following+' does not exist')        
+        return following
+
+    def validate(self, data):
+        token = Token.objects.get(key=data['key'])
+        user = User.objects.get(username=data['following'])
+        if user.id == token.user_id:
+            raise serializers.ValidationError('You cannot cancel following yourself.')
+        else:
+            is_following = False
+            for uf in UserProfile.objects.get(user_id=token.user_id).followings.all():
+                if user.username == str(uf.user): 
+                    is_following = True
+                    break
+            for uf in UserProfile.objects.get(user_id=user.id).followers.all():
+                if user.username == str(uf.user): 
+                    is_following = True
+                    break
+            if not is_following: raise serializers.ValidationError('You have not followed '+user.username+'.')
+        return data
+    
+    class Meta:
+        model = UserProfile
+        fields = ('key', 'following')    
+
 

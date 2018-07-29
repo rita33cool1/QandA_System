@@ -8,6 +8,7 @@ from rest_framework import status
 from rest_framework import generics
 from rest_framework import filters
 from .serializer import FollowingSerializer
+from .serializer import CancelFollowingSerializer
 from .serializer import DelFriendSerializer
 from .serializer import AddFriendRequestSerializer
 from .serializer import ConfirmFriendRequestSerializer
@@ -135,6 +136,26 @@ def AddFollowing(request, format='json'):
         follower_profile.followings.add(following_friend)
         following_profile.save()
         following_profile.followers.add(follower_friend)
+        json = {"msg": success_message}
+        return Response(json, status=httpstatus)
+    else: error_msg = ParseErrorMsg(serializer.errors)
+    json = {'msg':error_message, 'errorMsg': error_msg}
+    return Response(json, status=httpstatus)
+
+@api_view(['POST'])
+def CancelFollowing(request, format='json'):
+    serializer = CancelFollowingSerializer(data=request.data)
+    blank = False
+    if serializer.is_valid():
+        token = Token.objects.get(key=serializer.data['key'])
+        follower = User.objects.get(id=token.user_id)
+        following = User.objects.get(username=serializer.data['following'])
+        following_profile = UserProfile.objects.get(user_id=following.id)
+        follower_profile = UserProfile.objects.get(user_id=follower.id)
+        follower_friend = Friend.objects.get(user_id=follower.id)
+        following_friend = Friend.objects.get(user_id=following.id)
+        follower_profile.followings.remove(following_friend)
+        following_profile.followers.remove(follower_friend)
         json = {"msg": success_message}
         return Response(json, status=httpstatus)
     else: error_msg = ParseErrorMsg(serializer.errors)
