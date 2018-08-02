@@ -41,6 +41,10 @@ class UserProfile(models.Model):
 
     followings = models.ManyToManyField(Friend, related_name='following_user')
 
+    star_givings = models.ManyToManyField(Friend, related_name='star_giving')
+
+    star_givers = models.ManyToManyField(Friend, related_name='star_giver')
+
     class Meta:
         verbose_name = 'User Profile'
 

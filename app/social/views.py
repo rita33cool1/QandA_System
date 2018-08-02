@@ -7,6 +7,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework import status
 from rest_framework import generics
 from rest_framework import filters
+from .serializer import StarSerializer
 from .serializer import FollowingSerializer
 from .serializer import CancelFollowingSerializer
 from .serializer import DelFriendSerializer
@@ -156,6 +157,36 @@ def CancelFollowing(request, format='json'):
         following_friend = Friend.objects.get(user_id=following.id)
         follower_profile.followings.remove(following_friend)
         following_profile.followers.remove(follower_friend)
+        json = {"msg": success_message}
+        return Response(json, status=httpstatus)
+    else: error_msg = ParseErrorMsg(serializer.errors)
+    json = {'msg':error_message, 'errorMsg': error_msg}
+    return Response(json, status=httpstatus)
+
+@api_view(['POST'])
+def GiveStar(request, format='json'):
+    serializer = StarSerializer(data=request.data)
+    blank = False
+    if serializer.is_valid():
+        token = Token.objects.get(key=serializer.data['key'])
+        giver = User.objects.get(id=token.user_id)
+        giving = User.objects.get(username=serializer.data['star'])
+        giving_profile = UserProfile.objects.get(user_id=giving.id)
+        giver_profile = UserProfile.objects.get(user_id=giver.id)
+        if Friend.objects.filter(user_id__exact=giver.id):
+            giver_friend = Friend.objects.get(user_id=giver.id)
+        else:
+            giver_friend = Friend(user=giver)
+            giver_friend.save()    
+        if Friend.objects.filter(user_id__exact=giving.id):
+            giving_friend = Friend.objects.get(user_id=giving.id)
+        else:
+            giving_friend = Friend(user=giving)
+            giving_friend.save()    
+        giver_profile.save()
+        giver_profile.star_givings.add(giving_friend)
+        giving_profile.save()
+        giving_profile.star_givers.add(giver_friend)
         json = {"msg": success_message}
         return Response(json, status=httpstatus)
     else: error_msg = ParseErrorMsg(serializer.errors)

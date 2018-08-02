@@ -105,7 +105,7 @@ class ConfirmFriendRequestSerializer(serializers.ModelSerializer):
                     is_friend = True
                     break
                 if not is_friend:
-                    raise serializers.ValidationError('The user '+data['rquester']+' cancel the request or did not send the request.')
+                    raise serializers.ValidationError('The user '+data['requester']+' cancel the request or did not send the request.')
             replyer = User.objects.get(username=data['replyer'])
             is_friend = False
             for ufr in UserProfile.objects.get(user=replyer).friend_requests.all():
@@ -243,5 +243,48 @@ class CancelFollowingSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ('key', 'following')    
+
+class StarSerializer(serializers.ModelSerializer):
+    star = serializers.CharField(
+            required=True
+            )
+    key = serializers.CharField(
+            label='token',
+            min_length=40,
+            max_length=40,
+            required=True
+            )
+
+    def validate_key(self, key):
+        if not Token.objects.filter(key__exact=key):
+            raise serializers.ValidationError("This token does not exist")
+        return key
+    
+    def validate_star(self, star):
+        if not User.objects.filter(username__exact=star):
+            raise serializers.ValidationError('The user '+star+' does not exist')        
+        return star
+
+    def validate(self, data):
+        token = Token.objects.get(key=data['key'])
+        user = User.objects.get(username=data['star'])
+        if user.id == token.user_id:
+            raise serializers.ValidationError('You cannot give stars to yourself.')
+        else:
+            is_star = False
+            for uf in UserProfile.objects.get(user_id=token.user_id).star_givings.all():
+                if user.username == str(uf.user): 
+                    is_star = True
+                    break
+            for uf in UserProfile.objects.get(user_id=user.id).star_givers.all():
+                if user.username == str(uf.user): 
+                    is_star = True
+                    break
+            if is_star: raise serializers.ValidationError('You have given a star to '+user.username+'.')
+        return data
+    
+    class Meta:
+        model = UserProfile
+        fields = ('key', 'star')    
 
 
