@@ -4,10 +4,6 @@ from ..models import Expertise
 from ..models import Friend
 from ..models import QuestionForm
 from django.contrib import auth
-#from django.http import HttpResponseRedirect
-#from django.urls import reverse
-#from django.http import HttpResponseNotFound
-#from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
@@ -22,7 +18,6 @@ from .serializer import SetExpertiseSerializer
 from .serializer import GetExpertiseListSerializer
 from .serializer import GetQuestionSerializer
 from .serializer import GetUserListSerializer
-#from django_filters.rest_framework import DjangoFilterBackend
 
 ##--------------------API-------------------##
 success_message = 'Success'
@@ -104,6 +99,12 @@ def UserLogin(request, format='json'):
             }
     return Response(json, status=httpstatus)
 
+def getUserFromM2Mfriend(all_objs):
+    all_list = []
+    for ele in all_objs:
+        all_list.append(ele.user.username)
+    return all_list
+
 def getEleFromM2Mfield(all_objs, field):
     all_list = []
     if field == '':
@@ -136,10 +137,14 @@ class GetUserList(generics.ListAPIView):
             user = User.objects.get(id=ori_data['user_id'])
             profile = UserProfile.objects.get(user_id=ori_data['user_id'])
             ori_data['email'] = user.email
-            ori_data['friends'] = getEleFromM2Mfield(profile.friends.all().values(), 'friend')
+            ori_data['friends'] = getUserFromM2Mfriend(profile.friends.all())
+            ori_data['followings'] = getUserFromM2Mfriend(profile.followings.all())
             ori_data['expertises'] = getEleFromM2Mfield(profile.expertises.all().values(), 'expertise')
+            ori_data['star_givings'] = getUserFromM2Mfriend(profile.star_givings.all())
+            ori_data['star_number'] = len(getUserFromM2Mfriend(profile.star_givers.all()))          
             
         return Response(serializer.data)
+
 
 @api_view(['POST'])
 def GetProfile(request, format='json'):
@@ -156,21 +161,36 @@ def GetProfile(request, format='json'):
         for f in profile.friends.all():
             friends.append(f.user.username)
         expected_friends = []
-        print(profile.expected_friends.all())
         for f in profile.expected_friends.all():
             expected_friends.append(f.user.username)
         friend_requests = []
-        print(profile.friend_requests.all())
         for f in profile.friend_requests.all():
             friend_requests.append(f.user.username)
+        followings = []
+        for f in profile.followings.all():
+            followings.append(f.user.username)
+        followers = []
+        for f in profile.followers.all():
+            followers.append(f.user.username)
+        givers = []
+        for g in profile.star_givers.all():
+            givers.append(g.user.username)
+        givings = []
+        for g in profile.star_givings.all():
+            givings.append(g.user.username)
         json = {
                 'msg': success_message, 
                 'username': user.username, 
+                'uid': user.id,
                 'email':user.email, 
                 'expertise':exps,
                 'friends': friends,
                 'expected_friends': expected_friends,
-                'friend_requests': friend_requests
+                'friend_requests': friend_requests,
+                'followings': followings,
+                'followers': followers,
+                'star_givings': givings,
+                'star_givers': givers
                 }
         return Response(json, status=httpstatus)
     

@@ -39,7 +39,7 @@ class UserProfile(models.Model):
     
     followers = models.ManyToManyField(Friend, related_name='follower')
 
-    followings = models.ManyToManyField(Friend, related_name='following_user')
+    followings = models.ManyToManyField(Friend, related_name='following')
 
     star_givings = models.ManyToManyField(Friend, related_name='star_giving')
 

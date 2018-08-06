@@ -8,6 +8,7 @@ from rest_framework import status
 from rest_framework import generics
 from rest_framework import filters
 from .serializer import StarSerializer
+from .serializer import CancelStarSerializer
 from .serializer import FollowingSerializer
 from .serializer import CancelFollowingSerializer
 from .serializer import DelFriendSerializer
@@ -193,5 +194,23 @@ def GiveStar(request, format='json'):
     json = {'msg':error_message, 'errorMsg': error_msg}
     return Response(json, status=httpstatus)
 
-
+@api_view(['POST'])
+def CancelStar(request, format='json'):
+    serializer = CancelStarSerializer(data=request.data)
+    blank = False
+    if serializer.is_valid():
+        token = Token.objects.get(key=serializer.data['key'])
+        giver = User.objects.get(id=token.user_id)
+        giving = User.objects.get(username=serializer.data['star'])
+        giving_profile = UserProfile.objects.get(user_id=giving.id)
+        giver_profile = UserProfile.objects.get(user_id=giver.id)
+        giver_friend = Friend.objects.get(user_id=giver.id)
+        giving_friend = Friend.objects.get(user_id=giving.id)
+        giver_profile.star_givings.remove(giving_friend)
+        giving_profile.star_givers.remove(giver_friend)
+        json = {"msg": success_message}
+        return Response(json, status=httpstatus)
+    else: error_msg = ParseErrorMsg(serializer.errors)
+    json = {'msg':error_message, 'errorMsg': error_msg}
+    return Response(json, status=httpstatus)
 

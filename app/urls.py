@@ -19,6 +19,7 @@ urlpatterns = [
     url(r'social/following/add/$', social_views.AddFollowing, name='add_following'),
     url(r'social/following/cancel/$', social_views.CancelFollowing, name='cancel_following'),
     url(r'social/star/give/$', social_views.GiveStar, name='give_star'),
+    url(r'social/star/cancel/$', social_views.CancelStar, name='cancel_star'),
     
     url(r'questions/list/$', quest_views.GetQuestionList.as_view(), name='question_list'),
     url(r'question/post/$', quest_views.PostQuestion, name='post_question'),

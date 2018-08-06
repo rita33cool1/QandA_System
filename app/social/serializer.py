@@ -287,4 +287,47 @@ class StarSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = ('key', 'star')    
 
+class CancelStarSerializer(serializers.ModelSerializer):
+    star = serializers.CharField(
+            required=True
+            )
+    key = serializers.CharField(
+            label='token',
+            min_length=40,
+            max_length=40,
+            required=True
+            )
+
+    def validate_key(self, key):
+        if not Token.objects.filter(key__exact=key):
+            raise serializers.ValidationError("This token does not exist")
+        return key
+    
+    def validate_star(self, star):
+        if not User.objects.filter(username__exact=star):
+            raise serializers.ValidationError('The user '+star+' does not exist')        
+        return star
+
+    def validate(self, data):
+        token = Token.objects.get(key=data['key'])
+        user = User.objects.get(username=data['star'])
+        if user.id == token.user_id:
+            raise serializers.ValidationError('You cannot cancel giving stars to yourself.')
+        else:
+            is_star = False
+            for us in UserProfile.objects.get(user_id=token.user_id).star_givings.all():
+                if user.username == str(us.user): 
+                    is_star = True
+                    break
+            for us in UserProfile.objects.get(user_id=user.id).star_givers.all():
+                if user.username == str(us.user): 
+                    is_star = True
+                    break
+            if not is_star: raise serializers.ValidationError('You have not given a star to '+user.username+'.')
+        return data
+    
+    class Meta:
+        model = UserProfile
+        fields = ('key', 'star')    
+
 
