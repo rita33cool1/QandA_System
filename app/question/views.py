@@ -38,7 +38,7 @@ def PostQuestion(request, format='json'):
                 "msg": success_msg, 
                 "question_id": question.id
                 }
-        return Response(json, status=status.httpstatus)
+        return Response(json, status=httpstatus)
     json = {
             "msg": error_msg, 
             "errorMsg": ParseErrorMsg(eserializer.errors)

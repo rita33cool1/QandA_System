@@ -57,10 +57,12 @@ class QuestionSerializer(serializers.ModelSerializer):
         question.save()
         print('tag: ', validated_data['expertises'])
         for tag in validated_data['expertises']:
-            htag = Expertise(expertise=tag)
-            htag.save()
+            try: htag = Expertise.objects.get(expertise=tag)
+            except:    
+                htag = Expertise(expertise=tag)
+                htag.save()
+            question.save()
             question.expertises.add(htag)
-        question.save()
         return question
 
     def update(self, instance, validated_data):
