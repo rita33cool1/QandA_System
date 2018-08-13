@@ -18,6 +18,7 @@ from .serializer import QuestionSerializer
 from .serializer import GetQuestionSerializer
 from .serializer import DeleteQuestionSerializer
 from .serializer import AnswerSerializer
+from .serializer import DeleteAnswerSerializer
 from .serializer import GetAnswerSerializer
 
 
@@ -171,24 +172,33 @@ def PostAnswer(request, format='json'):
             "errorMsg": ParseErrorMsg(serializer.errors)
             }   
     return Response(json, status=httpstatus)
-"""
+
 @api_view(['POST'])
-def ModifyQuestion(request, format='json'):
-    try: question_id = request.data['question_id']
-    except: error_message = 'No question_id or format is wrong'
+def ModifyAnswer(request, format='json'):
+    try: answer_id = request.data['answer_id']
+    except: error_message = 'No answer ID or format is wrong'
     else:
-        if QuestionForm.objects.filter(id__exact=question_id):
-            question_instance = QuestionForm.objects.get(id=question_id)
-            serializer = QuestionSerializer(question_instance, data=request.data, partial=True)
+        if AnswerForm.objects.filter(id__exact=answer_id):
+            answer_instance = AnswerForm.objects.get(id=answer_id)
+            serializer = AnswerSerializer(answer_instance, data=request.data, partial=True)
             if serializer.is_valid():
-                question = serializer.save()
+                answer = serializer.save()
                 json = {"msg": success_msg}
                 return Response(json, status=httpstatus)
             else: error_message = ParseErrorMsg(serializer.errors)
-        else: error_message = 'This question_id does not exist.'
+        else: error_message = 'This answer ID does not exist.'
     json = {"msg": error_msg, "errorMsg": error_message}
     return Response(json, status=httpstatus)
-"""
+
+@api_view(['POST'])
+def DeleteAnswer(request, format='json'):
+    serializer = DeleteAnswerSerializer(data=request.data)
+    if serializer.is_valid():
+        AnswerForm.objects.get(id=serializer.data['answer_id']).delete()
+        json = {"msg": success_msg}
+        return Response(json, status=httpstatus)
+    json = {"msg": error_msg, "errorMsg": ParseErrorMsg(serializer.errors)}
+    return Response(json, status=httpstatus)
 
 class GetQuestion(generics.ListAPIView):
     serializer_class = GetQuestionSerializer
@@ -217,11 +227,18 @@ class GetQuestion(generics.ListAPIView):
             return Response(queryset)
         else:
             question_serializer = GetQuestionSerializer(queryset, many=True)
+            user = User.objects.get(id=question_serializer.data[0]['user'])
+            question_serializer.data[0]['user_id'] = user.id
+            question_serializer.data[0]['user'] = user.username
             result = {"question": question_serializer.data}
         queryset = self.get_queryset_answer()
         if queryset:
             answer_serializer = GetAnswerSerializer(queryset, many=True)
-            print(answer_serializer.data)                
+            print(answer_serializer.data) 
+            for ans in answer_serializer.data:               
+                user = User.objects.get(id=ans['user'])
+                ans['user_id'] = user.id
+                ans['user'] = user.username
             result['answers'] = answer_serializer.data                
 
         return Response(result)

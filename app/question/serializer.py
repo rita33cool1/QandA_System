@@ -169,7 +169,6 @@ class AnswerSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         user = GetUserFromToken(validated_data['key'])
-        question=QuestionForm.objects.get(id=validated_data['question_id']) 
         if instance.user_id != user.id :
             raise serializers.ValidationError('The author of the answer does not match the token.')
         else:
@@ -181,6 +180,36 @@ class AnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = AnswerForm 
         fields = ('key', 'content', 'create_date', 'question_id')   
+
+class DeleteAnswerSerializer(serializers.ModelSerializer):
+    key = serializers.CharField(
+            min_length=40,
+            max_length=40,
+            required=True
+            )
+    
+    answer_id = serializers.IntegerField(
+            required=True
+            )
+
+    def validate_key(self, key):
+        if not Token.objects.filter(key__exact=key):
+            raise serializers.ValidationError("This token does not exist")
+        return key
+     
+    def validate_answer_id(self, answer_id):
+        if not AnswerForm.objects.filter(id__exact=answer_id):
+            raise serializers.ValidationError("This answer ID does not exist")
+        return answer_id        
+    
+    def validate(self, data):
+        if Token.objects.get(key=data['key']).user_id != AnswerForm.objects.get(id=data['answer_id']).user_id:
+            raise serializers.ValidationError('The author of the answer does not match the token.')
+        return data
+
+    class Meta:
+        model = AnswerForm 
+        fields = ('key', 'answer_id')   
 
 class GetAnswerSerializer(serializers.ModelSerializer):
     class  Meta:

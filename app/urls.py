@@ -28,4 +28,6 @@ urlpatterns = [
     url(r'question/$', quest_views.GetQuestion.as_view(), name='get_question'),
     url(r'questions/$', quest_views.GetQuestionList.as_view(), name='question_list'),
     url(r'question/answer/post/$', quest_views.PostAnswer, name='post_answer'),
+    url(r'question/answer/edit/$', quest_views.ModifyAnswer, name='modify_answer'),
+    url(r'question/answer/delete/$', quest_views.DeleteAnswer, name='delete_answer'),
 ]
