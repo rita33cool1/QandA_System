@@ -3,6 +3,7 @@ from rest_framework.validators import UniqueValidator
 from django.contrib.auth.models import User
 from ..models import UserProfile
 from ..models import QuestionForm
+from ..models import AnswerForm
 from ..models import Expertise
 from rest_framework.authtoken.models import Token
 from django.utils import timezone
@@ -103,12 +104,12 @@ class DeleteQuestionSerializer(serializers.ModelSerializer):
 
     def validate_key(self, key):
         if not Token.objects.filter(key__exact=key):
-            raise serializers.ValidationError("This token does exist")
+            raise serializers.ValidationError("This token does not exist")
         return key
      
     def validate_question_id(self, question_id):
         if not QuestionForm.objects.filter(id__exact=question_id):
-            raise serializers.ValidationError("This question ID does exist")
+            raise serializers.ValidationError("This question ID does not exist")
         return question_id        
 
     class Meta:
@@ -119,4 +120,70 @@ class DeleteQuestionSerializer(serializers.ModelSerializer):
 class GetQuestionSerializer(serializers.ModelSerializer):
     class  Meta:
         model = QuestionForm
-        fields = '__all__'  
+        fields = '__all__' 
+
+class AnswerSerializer(serializers.ModelSerializer):
+    question_id = serializers.IntegerField(
+            required=True
+            )
+
+    content = serializers.CharField(
+            max_length=10000,
+            required=True
+            )
+
+    create_date = serializers.DateTimeField(
+            default=serializers.CreateOnlyDefault(timezone.now),
+            )
+
+    key = serializers.CharField(
+            label='token',
+            min_length=40,
+            max_length=40,
+            required=True
+            )
+
+    def validate_question_id(self, question_id):
+        if not QuestionForm.objects.filter(id__exact=question_id):
+            raise serializers.ValidationError("This question ID does not exist")
+        return question_id        
+    
+    def validate_key(self, key):
+        if not Token.objects.filter(key__exact=key):
+            raise serializers.ValidationError("This token does not exist")
+        return key
+    
+    def create(self, validated_data):
+        user = GetUserFromToken(validated_data['key'])
+        question=QuestionForm.objects.get(id=validated_data['question_id']) 
+        answer = AnswerForm(
+                user=user,
+                question=question, 
+                content=validated_data['content'],
+                create_date=validated_data['create_date'],
+                )
+        answer.save()
+        question.answer_number+=1
+        question.save()
+        return answer
+
+    def update(self, instance, validated_data):
+        user = GetUserFromToken(validated_data['key'])
+        question=QuestionForm.objects.get(id=validated_data['question_id']) 
+        if instance.user_id != user.id :
+            raise serializers.ValidationError('The author of the answer does not match the token.')
+        else:
+            try: instance.content = validated_data['content']
+            except: serializers.ValidationError('The content cannot be blank')
+            instance.save()
+            return instance 
+        
+    class Meta:
+        model = AnswerForm 
+        fields = ('key', 'content', 'create_date', 'question_id')   
+
+class GetAnswerSerializer(serializers.ModelSerializer):
+    class  Meta:
+        model = AnswerForm
+        fields = '__all__' 
+

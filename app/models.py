@@ -64,13 +64,58 @@ class QuestionForm(models.Model):
     
     mod_date = models.DateTimeField('Last modified', auto_now=True)
 
-    reply_number = models.IntegerField('Reply Number', default=0)
+    answer_number = models.IntegerField('Answer Number', default=0)
+    
+    comment_number = models.IntegerField('Comment Number', default=0)
     
     expertises = models.ManyToManyField(Expertise)
+
+    resolved = models.BooleanField('Resovled', default=False)
 
     class Meta:
         verbose_name = 'Question Form'
 
     def __str__(self):
         return "{}".format(self.__str__())
+
+class AnswerForm(models.Model):
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='answer_form')
+
+    question = models.ForeignKey(QuestionForm, on_delete=models.CASCADE, related_name='answer_form')
+
+    content = models.CharField('Content', max_length=10000, blank=True)
+
+    create_date = models.DateTimeField('Create modified')
+    
+    mod_date = models.DateTimeField('Last modified', auto_now=True)
+
+    comment_number = models.IntegerField('Comment Number', default=0)
+    
+    class Meta:
+        verbose_name = 'Answer Form'
+
+    def __str__(self):
+        return "{}".format(self.__str__())
+
+class CommentForm(models.Model):
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comment_form')
+
+    question = models.ForeignKey(QuestionForm, on_delete=models.CASCADE, related_name='comment_form')
+
+    answer = models.ForeignKey(AnswerForm, on_delete=models.CASCADE, related_name='comment_form', default=-1)
+    
+    content = models.CharField('Content', max_length=10000, blank=True)
+
+    create_date = models.DateTimeField('Create modified')
+    
+    mod_date = models.DateTimeField('Last modified', auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Comment Form'
+
+    def __str__(self):
+        return "{}".format(self.__str__())
+
 
