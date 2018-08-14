@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from ..models import UserProfile
 from ..models import QuestionForm
 from ..models import AnswerForm
+from ..models import CommentForm
 from ..models import Expertise
 from rest_framework.authtoken.models import Token
 from django.utils import timezone
@@ -163,8 +164,6 @@ class AnswerSerializer(serializers.ModelSerializer):
                 create_date=validated_data['create_date'],
                 )
         answer.save()
-        question.answer_number+=1
-        question.save()
         return answer
 
     def update(self, instance, validated_data):
@@ -214,5 +213,85 @@ class DeleteAnswerSerializer(serializers.ModelSerializer):
 class GetAnswerSerializer(serializers.ModelSerializer):
     class  Meta:
         model = AnswerForm
+        fields = '__all__' 
+
+class CommentSerializer(serializers.ModelSerializer):
+    question_id = serializers.IntegerField(
+            required=True
+            )
+
+    answer_id = serializers.IntegerField()
+
+    content = serializers.CharField(
+            max_length=10000,
+            required=True
+            )
+
+    create_date = serializers.DateTimeField(
+            default=serializers.CreateOnlyDefault(timezone.now),
+            )
+
+    QorA = serializers.CharField(
+            required=True
+            )
+
+    key = serializers.CharField(
+            label='token',
+            min_length=40,
+            max_length=40,
+            required=True
+            )
+
+    def validate_question_id(self, question_id):
+        if not QuestionForm.objects.filter(id__exact=question_id):
+            raise serializers.ValidationError("This question ID does not exist")
+        return question_id        
+    
+    def validate_QorA(self, QorA):
+        if QorA != 'question' and QorA != 'answer':
+            raise serializers.ValidationError("QorA only can be 'question' or 'answer'. That is, you should define this comment is under a question or an answer")
+        return QorA
+    
+    def validate_key(self, key):
+        if not Token.objects.filter(key__exact=key):
+            raise serializers.ValidationError("This token does not exist")
+        return key
+    
+    def create(self, validated_data):
+        user = GetUserFromToken(validated_data['key'])
+        question = QuestionForm.objects.get(id=validated_data['question_id'])
+        if validated_data['QorA'] == 'question': 
+            answer = AnswerForm.objects.get(id=1)
+        else: 
+            if not AnswerForm.objects.filter(id=validated_data['answer_id']):
+                raise serializers.ValidationError("This answer ID does not exist")
+            answer = AnswerForm.objects.get(id=validated_data['answer_id']) 
+        comment = CommentForm(
+                user=user,
+                question=question, 
+                answer=answer,
+                content=validated_data['content'],
+                create_date=validated_data['create_date'],
+                )
+        comment.save()
+        return comment
+
+    def update(self, instance, validated_data):
+        user = GetUserFromToken(validated_data['key'])
+        if instance.user_id != user.id :
+            raise serializers.ValidationError('The author of the answer does not match the token.')
+        else:
+            try: instance.content = validated_data['content']
+            except: serializers.ValidationError('The content cannot be blank')
+            instance.save()
+            return instance 
+        
+    class Meta:
+        model = AnswerForm 
+        fields = ('key', 'content', 'create_date', 'question_id', 'answer_id', 'QorA')   
+
+class GetCommentSerializer(serializers.ModelSerializer):
+    class  Meta:
+        model = CommentForm
         fields = '__all__' 
 

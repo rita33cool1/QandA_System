@@ -5,25 +5,9 @@ from jsonfield import JSONField
 
 class Expertise(models.Model):
     expertise = models.CharField(max_length=32, blank=True, unique=True)
-"""
-    majority_types = (
-        ('MATH', 'math'),
-        ('COMPUTER_SCIENCE', 'computer_science'),
-        ('ENGLISH', 'english')
-    )
-    majorities = (choices=majority_types)
-"""
 
 class Friend(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='friend', unique=True)
-
-"""
-class ExpectedFriend(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='friend', unique=True)
-
-class FriendRequest(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='friend', unique=True)
-"""
 
 class UserProfile(models.Model):
 
@@ -64,10 +48,6 @@ class QuestionForm(models.Model):
     
     mod_date = models.DateTimeField('Last modified', auto_now=True)
 
-    answer_number = models.IntegerField('Answer Number', default=0)
-    
-    comment_number = models.IntegerField('Comment Number', default=0)
-    
     expertises = models.ManyToManyField(Expertise)
 
     resolved = models.BooleanField('Resovled', default=False)
@@ -90,8 +70,6 @@ class AnswerForm(models.Model):
     
     mod_date = models.DateTimeField('Last modified', auto_now=True)
 
-    comment_number = models.IntegerField('Comment Number', default=0)
-    
     class Meta:
         verbose_name = 'Answer Form'
 
@@ -104,7 +82,7 @@ class CommentForm(models.Model):
 
     question = models.ForeignKey(QuestionForm, on_delete=models.CASCADE, related_name='comment_form')
 
-    answer = models.ForeignKey(AnswerForm, on_delete=models.CASCADE, related_name='comment_form', default=-1)
+    answer = models.ForeignKey(AnswerForm, on_delete=models.CASCADE, related_name='comment_form', default=1)
     
     content = models.CharField('Content', max_length=10000, blank=True)
 
@@ -117,5 +95,4 @@ class CommentForm(models.Model):
 
     def __str__(self):
         return "{}".format(self.__str__())
-
 

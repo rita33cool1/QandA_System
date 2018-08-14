@@ -1,6 +1,7 @@
 from ..models import Expertise
 from ..models import QuestionForm
 from ..models import AnswerForm
+from ..models import CommentForm
 from django.contrib import auth
 from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
@@ -20,6 +21,8 @@ from .serializer import DeleteQuestionSerializer
 from .serializer import AnswerSerializer
 from .serializer import DeleteAnswerSerializer
 from .serializer import GetAnswerSerializer
+from .serializer import CommentSerializer
+from .serializer import GetCommentSerializer
 
 
 ##--------------------API-------------------##
@@ -28,11 +31,17 @@ error_msg = 'Error'
 httpstatus = status.HTTP_200_OK
 
 def ParseErrorMsg(msg):
-    print(msg)
+    #print(msg)
+    if len(msg.keys()) == 0:
+        return None
     for k in msg.keys():
         key = k
         break
-    return msg[key][0]
+    if key == 'non_field_errors':
+        msg = msg[key][0]
+    else:
+        msg = key + ": " + msg[key][0]
+    return msg
 
 @api_view(['POST'])
 def PostQuestion(request, format='json'):
@@ -194,10 +203,39 @@ def ModifyAnswer(request, format='json'):
 def DeleteAnswer(request, format='json'):
     serializer = DeleteAnswerSerializer(data=request.data)
     if serializer.is_valid():
-        AnswerForm.objects.get(id=serializer.data['answer_id']).delete()
+        answer = AnswerForm.objects.get(id=serializer.data['answer_id'])
+        answer.delete()
+        QuestionForm.objects.get(id=answer.question_id).save()
         json = {"msg": success_msg}
         return Response(json, status=httpstatus)
     json = {"msg": error_msg, "errorMsg": ParseErrorMsg(serializer.errors)}
+    return Response(json, status=httpstatus)
+
+@api_view(['POST'])
+def PostComment(request, format='json'):
+    serializer = CommentSerializer(data=request.data)
+    try: QorA = request.data['QorA']
+    except: print("No 'QorA' field")
+    else:
+         if request.data['QorA'] == 'answer':
+            try: answer_id = request.data['answer_id']
+            except: 
+                json = {
+                    "msg": error_msg, 
+                   "errorMsg": 'No answer ID or format is wrong'
+                    }   
+                return Response(json, status=httpstatus)
+    if serializer.is_valid():
+        comment = serializer.save()
+        json = {
+                "msg": success_msg, 
+                "comment_id": comment.id
+                }
+        return Response(json, status=httpstatus)
+    json = {
+            "msg": error_msg, 
+            "errorMsg": ParseErrorMsg(serializer.errors)
+            }   
     return Response(json, status=httpstatus)
 
 class GetQuestion(generics.ListAPIView):
@@ -221,7 +259,17 @@ class GetQuestion(generics.ListAPIView):
         else:
             return queryset.filter(question__exact=qid, id__exact=aid)
 
+    def get_queryset_comment(self):
+        queryset = CommentForm.objects.all()
+        qid = self.request.query_params.get('qid', None)
+        aid = self.request.query_params.get('aid', None)
+        if aid is None:
+            return queryset.filter(question__exact=qid)
+        else:
+            return queryset.filter(question=qid, answer=aid).filter(question=qid, answer=1)
+
     def list(self, request):
+        comment_queryset = self.get_queryset_comment()
         queryset = self.get_queryset()
         if not queryset:
             return Response(queryset)
@@ -230,15 +278,20 @@ class GetQuestion(generics.ListAPIView):
             user = User.objects.get(id=question_serializer.data[0]['user'])
             question_serializer.data[0]['user_id'] = user.id
             question_serializer.data[0]['user'] = user.username
+            if comment_queryset:
+                comment_serializer = GetCommentSerializer(comment_queryset.filter(answer_id=1), many=True)
+                question_serializer.data[0]['comments'] = comment_serializer.data
             result = {"question": question_serializer.data}
         queryset = self.get_queryset_answer()
         if queryset:
             answer_serializer = GetAnswerSerializer(queryset, many=True)
-            print(answer_serializer.data) 
             for ans in answer_serializer.data:               
                 user = User.objects.get(id=ans['user'])
                 ans['user_id'] = user.id
                 ans['user'] = user.username
+                if comment_queryset:
+                    comment_serializer = GetCommentSerializer(comment_queryset.filter(answer_id=ans['id']), many=True)
+                    ans['comments'] = comment_serializer.data
             result['answers'] = answer_serializer.data                
 
         return Response(result)
