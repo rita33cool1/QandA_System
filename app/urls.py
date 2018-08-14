@@ -30,4 +30,7 @@ urlpatterns = [
     url(r'question/answer/post/$', quest_views.PostAnswer, name='post_answer'),
     url(r'question/answer/edit/$', quest_views.ModifyAnswer, name='modify_answer'),
     url(r'question/answer/delete/$', quest_views.DeleteAnswer, name='delete_answer'),
+    url(r'question/comment/post/$', quest_views.PostComment, name='post_comment'),
+    url(r'question/comment/edit/$', quest_views.ModifyComment, name='modify_comment'),
+    url(r'question/comment/delete/$', quest_views.DeleteComment, name='delete_comment'),
 ]

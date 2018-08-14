@@ -22,6 +22,7 @@ from .serializer import AnswerSerializer
 from .serializer import DeleteAnswerSerializer
 from .serializer import GetAnswerSerializer
 from .serializer import CommentSerializer
+from .serializer import DeleteCommentSerializer
 from .serializer import GetCommentSerializer
 
 
@@ -205,7 +206,7 @@ def DeleteAnswer(request, format='json'):
     if serializer.is_valid():
         answer = AnswerForm.objects.get(id=serializer.data['answer_id'])
         answer.delete()
-        QuestionForm.objects.get(id=answer.question_id).save()
+        #QuestionForm.objects.get(id=answer.question_id).save()
         json = {"msg": success_msg}
         return Response(json, status=httpstatus)
     json = {"msg": error_msg, "errorMsg": ParseErrorMsg(serializer.errors)}
@@ -237,6 +238,15 @@ def PostComment(request, format='json'):
             "errorMsg": ParseErrorMsg(serializer.errors)
             }   
     return Response(json, status=httpstatus)
+
+def CommentContentModfy(serializer_data):
+    for data in serializer_data:
+        data['user_id'] = data['user']
+        data['user'] = User.objects.get(id=data['user_id']).username
+        data['question_id'] = data['question']
+        del data['question']
+        data['answer_id'] = data['answer']
+        del data['answer']
 
 class GetQuestion(generics.ListAPIView):
     serializer_class = GetQuestionSerializer
@@ -280,6 +290,7 @@ class GetQuestion(generics.ListAPIView):
             question_serializer.data[0]['user'] = user.username
             if comment_queryset:
                 comment_serializer = GetCommentSerializer(comment_queryset.filter(answer_id=1), many=True)
+                CommentContentModfy(comment_serializer.data)
                 question_serializer.data[0]['comments'] = comment_serializer.data
             result = {"question": question_serializer.data}
         queryset = self.get_queryset_answer()
@@ -291,8 +302,36 @@ class GetQuestion(generics.ListAPIView):
                 ans['user'] = user.username
                 if comment_queryset:
                     comment_serializer = GetCommentSerializer(comment_queryset.filter(answer_id=ans['id']), many=True)
+                    CommentContentModfy(comment_serializer.data)
                     ans['comments'] = comment_serializer.data
             result['answers'] = answer_serializer.data                
 
         return Response(result)
+
+@api_view(['POST'])
+def ModifyComment(request, format='json'):
+    try: comment_id = request.data['comment_id']
+    except: error_message = 'No comment ID or format is wrong'
+    else:
+        if CommentForm.objects.filter(id__exact=comment_id):
+            comment_instance = CommentForm.objects.get(id=comment_id)
+            serializer = CommentSerializer(comment_instance, data=request.data, partial=True)
+            if serializer.is_valid():
+                comment = serializer.save()
+                json = {"msg": success_msg}
+                return Response(json, status=httpstatus)
+            else: error_message = ParseErrorMsg(serializer.errors)
+        else: error_message = 'This comment ID does not exist.'
+    json = {"msg": error_msg, "errorMsg": error_message}
+    return Response(json, status=httpstatus)
+
+@api_view(['POST'])
+def DeleteComment(request, format='json'):
+    serializer = DeleteCommentSerializer(data=request.data)
+    if serializer.is_valid():
+        CommentForm.objects.get(id=serializer.data['comment_id']).delete()
+        json = {"msg": success_msg}
+        return Response(json, status=httpstatus)
+    json = {"msg": error_msg, "errorMsg": ParseErrorMsg(serializer.errors)}
+    return Response(json, status=httpstatus)
 

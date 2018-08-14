@@ -279,7 +279,7 @@ class CommentSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         user = GetUserFromToken(validated_data['key'])
         if instance.user_id != user.id :
-            raise serializers.ValidationError('The author of the answer does not match the token.')
+            raise serializers.ValidationError('The author of the comment does not match the token.')
         else:
             try: instance.content = validated_data['content']
             except: serializers.ValidationError('The content cannot be blank')
@@ -289,6 +289,36 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = AnswerForm 
         fields = ('key', 'content', 'create_date', 'question_id', 'answer_id', 'QorA')   
+
+class DeleteCommentSerializer(serializers.ModelSerializer):
+    key = serializers.CharField(
+            min_length=40,
+            max_length=40,
+            required=True
+            )
+    
+    comment_id = serializers.IntegerField(
+            required=True
+            )
+
+    def validate_key(self, key):
+        if not Token.objects.filter(key__exact=key):
+            raise serializers.ValidationError("This token does not exist")
+        return key
+     
+    def validate_comment_id(self, comment_id):
+        if not CommentForm.objects.filter(id__exact=comment_id):
+            raise serializers.ValidationError("This comment ID does not exist")
+        return comment_id        
+    
+    def validate(self, data):
+        if Token.objects.get(key=data['key']).user_id != CommentForm.objects.get(id=data['comment_id']).user_id:
+            raise serializers.ValidationError('The author of the comment does not match the token.')
+        return data
+
+    class Meta:
+        model = AnswerForm 
+        fields = ('key', 'comment_id')   
 
 class GetCommentSerializer(serializers.ModelSerializer):
     class  Meta:
