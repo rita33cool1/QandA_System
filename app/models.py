@@ -9,8 +9,11 @@ class Expertise(models.Model):
 class Friend(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='friend', unique=True)
 
-class UserProfile(models.Model):
+class Vote(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='vote')
+    vote = models.IntegerField('Vote')
 
+class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
 
     expertises = models.ManyToManyField(Expertise)
@@ -25,9 +28,9 @@ class UserProfile(models.Model):
 
     followings = models.ManyToManyField(Friend, related_name='following')
 
-    star_givings = models.ManyToManyField(Friend, related_name='star_giving')
+    #star_givings = models.ManyToManyField(Friend, related_name='star_giving')
 
-    star_givers = models.ManyToManyField(Friend, related_name='star_giver')
+    #star_givers = models.ManyToManyField(Friend, related_name='star_giver')
 
     class Meta:
         verbose_name = 'User Profile'
@@ -37,7 +40,6 @@ class UserProfile(models.Model):
 
 
 class QuestionForm(models.Model):
-
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='question_form')
 
     title = models.CharField('Title', max_length=128)
@@ -52,6 +54,8 @@ class QuestionForm(models.Model):
 
     resolved = models.BooleanField('Resovled', default=False)
 
+    votes = models.ManyToManyField(Vote)
+
     class Meta:
         verbose_name = 'Question Form'
 
@@ -59,7 +63,6 @@ class QuestionForm(models.Model):
         return "{}".format(self.__str__())
 
 class AnswerForm(models.Model):
-
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='answer_form')
 
     question = models.ForeignKey(QuestionForm, on_delete=models.CASCADE, related_name='answer_form')
@@ -70,6 +73,10 @@ class AnswerForm(models.Model):
     
     mod_date = models.DateTimeField('Last modified', auto_now=True)
 
+    votes = models.ManyToManyField(Vote)
+    
+    #stars = models.ManyToManyField(Star)
+
     class Meta:
         verbose_name = 'Answer Form'
 
@@ -77,7 +84,6 @@ class AnswerForm(models.Model):
         return "{}".format(self.__str__())
 
 class CommentForm(models.Model):
-
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comment_form')
 
     question = models.ForeignKey(QuestionForm, on_delete=models.CASCADE, related_name='comment_form')

@@ -325,3 +325,84 @@ class GetCommentSerializer(serializers.ModelSerializer):
         model = CommentForm
         fields = '__all__' 
 
+class VoteForQuestionSerializer(serializers.ModelSerializer):
+    QorA = serializers.CharField(
+            required=True
+            )
+   
+    question_id = serializers.IntegerField(
+            required=True
+            )
+
+    vote = serializers.IntegerField(
+            required=True
+            )
+
+    key = serializers.CharField(
+            label='token',
+            min_length=40,
+            max_length=40,
+            required=True
+            )
+    
+    def validate_vote(self, vote):
+        if vote != 1 and vote != -1 and vote != 0:
+            raise serializers.ValidationError("Vote only can be 1, 0 or -1, which represents you like or dislike this post.")
+        return vote
+    
+    def validate_key(self, key):
+        if not Token.objects.filter(key__exact=key):
+            raise serializers.ValidationError("This token does not exist")
+        return key
+    
+    def validate(self, data):
+        user = User.objects.get(id=Token.objects.get(key=data['key']).user.id)
+        question = QuestionForm.objects.get(id=data['question_id'])
+        if user == question.user:
+            raise serializers.ValidationError('You cannot vote for your own question.')
+        return data 
+
+    class Meta:
+        model = QuestionForm 
+        fields = ('key', 'question_id', 'QorA', 'vote')   
+
+class VoteForAnswerSerializer(serializers.ModelSerializer):
+    QorA = serializers.CharField(
+            required=True
+            )
+   
+    answer_id = serializers.IntegerField(
+            required=True
+            )
+
+    vote = serializers.IntegerField(
+            required=True
+            )
+
+    key = serializers.CharField(
+            label='token',
+            min_length=40,
+            max_length=40,
+            required=True
+            )
+
+    def validate_vote(self, vote):
+        if vote != 1 and vote != -1:
+            raise serializers.ValidationError("Vote only can be 1 or -1, which represents you like or dislike this post.")
+        return vote
+    
+    def validate_key(self, key):
+        if not Token.objects.filter(key__exact=key):
+            raise serializers.ValidationError("This token does not exist")
+        return key
+    
+    def validate(self, data):
+        user = User.objects.get(id=Token.objects.get(key=data['key']).user.id)
+        answer = AnswerForm.objects.get(id=data['answer_id'])
+        if user == answer.user:
+                raise serializers.ValidationError('You cannot vote for your own answer.')
+        return data 
+
+    class Meta:
+        model = AnswerForm 
+        fields = ('key', 'answer_id', 'QorA', 'vote')   

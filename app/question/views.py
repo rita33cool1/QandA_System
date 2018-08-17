@@ -1,3 +1,4 @@
+from ..models import Vote
 from ..models import Expertise
 from ..models import QuestionForm
 from ..models import AnswerForm
@@ -24,6 +25,8 @@ from .serializer import GetAnswerSerializer
 from .serializer import CommentSerializer
 from .serializer import DeleteCommentSerializer
 from .serializer import GetCommentSerializer
+from .serializer import VoteForQuestionSerializer
+from .serializer import VoteForAnswerSerializer
 
 
 ##--------------------API-------------------##
@@ -92,46 +95,6 @@ def DeleteQuestion(request, format='json'):
     else: error_message = ParseErrorMsg(serializer.errors)
     json = {"msg": error_msg, "errorMsg": error_message}
     return Response(json, status=httpstatus)
-
-"""
-def GetQuestionByID(id):
-    question = QuestionForm.objects.get(id=id)
-    exps = []
-    for exp in question.expertises.all():
-        exps.append(exp.expertise)
-    json = {
-            "question_id": id,
-            "username": question.user.username,
-            "title": question.title,
-            "content": question.content,
-            "create_date": question.create_date,
-            "modify_date": question.mod_date,
-            "answer_number": question.answer_number,
-            "comment_number": question.comment_number,
-            "expertises": exps,
-            }
-    return json
-
-@api_view(['GET'])
-def GetQuestion(request, pk):
-    if pk == '0':
-        quests = []
-        for quest in QuestionForm.objects.all():
-            quests.append({"question": GetQuestionByID(quest.id)})
-        json = {
-                "msg": success_msg,
-                "questions": quests
-                }
-        return Response(json, status=httpstatus)
-    else:
-        if not QuestionForm.objects.filter(id=pk):
-            error_message = 'Wrong question id'
-        else:
-            json =GetQuestionByID(pk)
-            return Response(json, status=httpstatus)
-        json = {"msg": error_msg, "errorMsg": error_message}
-        return Response(json, status=httpstatus)
-"""
 
 class GetQuestionList(generics.ListAPIView):
     serializer_class = GetQuestionSerializer
@@ -206,7 +169,6 @@ def DeleteAnswer(request, format='json'):
     if serializer.is_valid():
         answer = AnswerForm.objects.get(id=serializer.data['answer_id'])
         answer.delete()
-        #QuestionForm.objects.get(id=answer.question_id).save()
         json = {"msg": success_msg}
         return Response(json, status=httpstatus)
     json = {"msg": error_msg, "errorMsg": ParseErrorMsg(serializer.errors)}
@@ -239,6 +201,71 @@ def PostComment(request, format='json'):
             }   
     return Response(json, status=httpstatus)
 
+@api_view(['POST'])
+def ModifyComment(request, format='json'):
+    try: comment_id = request.data['comment_id']
+    except: error_message = 'No comment ID or format is wrong'
+    else:
+        if CommentForm.objects.filter(id__exact=comment_id):
+            comment_instance = CommentForm.objects.get(id=comment_id)
+            serializer = CommentSerializer(comment_instance, data=request.data, partial=True)
+            if serializer.is_valid():
+                comment = serializer.save()
+                json = {"msg": success_msg}
+                return Response(json, status=httpstatus)
+            else: error_message = ParseErrorMsg(serializer.errors)
+        else: error_message = 'This comment ID does not exist.'
+    json = {"msg": error_msg, "errorMsg": error_message}
+    return Response(json, status=httpstatus)
+
+@api_view(['POST'])
+def DeleteComment(request, format='json'):
+    serializer = VoteForAnswerSerializer(data=request.data)
+    if serializer.is_valid():
+        CommentForm.objects.get(id=serializer.data['comment_id']).delete()
+        json = {"msg": success_msg}
+        return Response(json, status=httpstatus)
+    json = {"msg": error_msg, "errorMsg": ParseErrorMsg(serializer.errors)}
+    return Response(json, status=httpstatus)
+
+@api_view(['POST'])
+def VotePost(request, format='json'):
+    error_message = ""
+    try: QorA = request.data['QorA']
+    except: error_message = "You should enter the field QorA."
+    else:
+        if QorA == 'question':
+            serializer = VoteForQuestionSerializer(data=request.data)
+            try: post = QuestionForm.objects.get(id=request.data['question_id'])
+            except: error_message = "The field question_id is wrong or not existing."
+        elif QorA == 'answer':
+            serializer = VoteForAnswerSerializer(data=request.data)
+            try: post = AnswerForm.objects.get(id=request.data['answer_id'])
+            except: error_message = "The field answer_id is wrong or not existing."
+        else:
+            error_message = "QorA only can be 'question' or 'answer'. That is, you should define this post is a question or an answer."
+
+    if error_message == "" and serializer.is_valid():
+        token = Token.objects.get(key=serializer.data['key'])
+        user = User.objects.get(id=token.user.id)
+        if Vote.objects.filter(user_id=user.id, vote=serializer.data['vote']):
+            vote = Vote.objects.filter(user_id=user.id, vote=serializer.data['vote']).first()
+        else:
+            vote = Vote(user=user, vote=serializer.data['vote'])
+            vote.save()
+        for v in post.votes.all():
+            if v.user == user:
+                post.votes.remove(v)
+        post.save()
+        post.votes.add(vote)
+        json = {"msg": success_msg}
+        return Response(json, status=httpstatus)
+    elif error_message == "":
+        error_message = ParseErrorMsg(serializer.errors)
+    
+    json = {"msg": error_msg, "errorMsg": error_message}
+    return Response(json, status=httpstatus)
+
 def CommentContentModfy(serializer_data):
     for data in serializer_data:
         data['user_id'] = data['user']
@@ -247,6 +274,15 @@ def CommentContentModfy(serializer_data):
         del data['question']
         data['answer_id'] = data['answer']
         del data['answer']
+
+def ExtractVoters(serializer_data):
+    for data in serializer_data:
+        votes = []
+        for v in data['votes']:
+            vote = Vote.objects.get(id=v)
+            if vote.vote != 0:
+                votes.append({"voter": vote.user.username, "vote": vote.vote})
+        data['votes'] = votes
 
 class GetQuestion(generics.ListAPIView):
     serializer_class = GetQuestionSerializer
@@ -288,6 +324,7 @@ class GetQuestion(generics.ListAPIView):
             user = User.objects.get(id=question_serializer.data[0]['user'])
             question_serializer.data[0]['user_id'] = user.id
             question_serializer.data[0]['user'] = user.username
+            ExtractVoters(question_serializer.data)
             if comment_queryset:
                 comment_serializer = GetCommentSerializer(comment_queryset.filter(answer_id=1), many=True)
                 CommentContentModfy(comment_serializer.data)
@@ -296,6 +333,7 @@ class GetQuestion(generics.ListAPIView):
         queryset = self.get_queryset_answer()
         if queryset:
             answer_serializer = GetAnswerSerializer(queryset, many=True)
+            ExtractVoters(answer_serializer.data)
             for ans in answer_serializer.data:               
                 user = User.objects.get(id=ans['user'])
                 ans['user_id'] = user.id
@@ -308,30 +346,5 @@ class GetQuestion(generics.ListAPIView):
 
         return Response(result)
 
-@api_view(['POST'])
-def ModifyComment(request, format='json'):
-    try: comment_id = request.data['comment_id']
-    except: error_message = 'No comment ID or format is wrong'
-    else:
-        if CommentForm.objects.filter(id__exact=comment_id):
-            comment_instance = CommentForm.objects.get(id=comment_id)
-            serializer = CommentSerializer(comment_instance, data=request.data, partial=True)
-            if serializer.is_valid():
-                comment = serializer.save()
-                json = {"msg": success_msg}
-                return Response(json, status=httpstatus)
-            else: error_message = ParseErrorMsg(serializer.errors)
-        else: error_message = 'This comment ID does not exist.'
-    json = {"msg": error_msg, "errorMsg": error_message}
-    return Response(json, status=httpstatus)
 
-@api_view(['POST'])
-def DeleteComment(request, format='json'):
-    serializer = DeleteCommentSerializer(data=request.data)
-    if serializer.is_valid():
-        CommentForm.objects.get(id=serializer.data['comment_id']).delete()
-        json = {"msg": success_msg}
-        return Response(json, status=httpstatus)
-    json = {"msg": error_msg, "errorMsg": ParseErrorMsg(serializer.errors)}
-    return Response(json, status=httpstatus)
 
