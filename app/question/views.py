@@ -27,6 +27,7 @@ from .serializer import DeleteCommentSerializer
 from .serializer import GetCommentSerializer
 from .serializer import VoteForQuestionSerializer
 from .serializer import VoteForAnswerSerializer
+from .serializer import StarAnswerSerializer
 
 
 ##--------------------API-------------------##
@@ -168,6 +169,10 @@ def DeleteAnswer(request, format='json'):
     serializer = DeleteAnswerSerializer(data=request.data)
     if serializer.is_valid():
         answer = AnswerForm.objects.get(id=serializer.data['answer_id'])
+        question = QuestionForm.objects.get(id=answer.question.id)
+        if question.star_answer == answer.id:
+            question.star_answer = 0
+            question.save()
         answer.delete()
         json = {"msg": success_msg}
         return Response(json, status=httpstatus)
@@ -180,14 +185,16 @@ def PostComment(request, format='json'):
     try: QorA = request.data['QorA']
     except: print("No 'QorA' field")
     else:
-         if request.data['QorA'] == 'answer':
+        if request.data['QorA'] == 'answer':
             try: answer_id = request.data['answer_id']
             except: 
                 json = {
-                    "msg": error_msg, 
-                   "errorMsg": 'No answer ID or format is wrong'
-                    }   
+                        "msg": error_msg, 
+                        "errorMsg": 'No answer ID or format is wrong'
+                        }   
                 return Response(json, status=httpstatus)
+        else: request.data['answer_id'] = 1
+    serializer = CommentSerializer(data=request.data)
     if serializer.is_valid():
         comment = serializer.save()
         json = {
@@ -264,6 +271,26 @@ def VotePost(request, format='json'):
         error_message = ParseErrorMsg(serializer.errors)
     
     json = {"msg": error_msg, "errorMsg": error_message}
+    return Response(json, status=httpstatus)
+
+@api_view(['POST'])
+def StarAnswer(request, format='json'):
+    serializer = StarAnswerSerializer(data=request.data)
+    if serializer.is_valid():
+        question = QuestionForm.objects.get(id=serializer.data['question_id'])
+        answer = AnswerForm.objects.get(id=serializer.data['answer_id'])
+        try: ori_answer = AnswerForm.objects.get(id=question.star_answer)
+        except: pass
+        else:
+            ori_answer.star = False
+            ori_answer.save()
+        answer.star = True
+        answer.save()
+        question.star_answer = answer.id
+        question.save()
+        json = {"msg": success_msg}
+        return Response(json, status=httpstatus)
+    json = {"msg": error_msg, "errorMsg": ParseErrorMsg(serializer.errors)}
     return Response(json, status=httpstatus)
 
 def CommentContentModfy(serializer_data):

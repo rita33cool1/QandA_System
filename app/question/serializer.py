@@ -266,6 +266,8 @@ class CommentSerializer(serializers.ModelSerializer):
             if not AnswerForm.objects.filter(id=validated_data['answer_id']):
                 raise serializers.ValidationError("This answer ID does not exist")
             answer = AnswerForm.objects.get(id=validated_data['answer_id']) 
+            if answer.question.id != question.id:
+                raise serializers.ValidationError("This answer is not under the question.") 
         comment = CommentForm(
                 user=user,
                 question=question, 
@@ -406,3 +408,54 @@ class VoteForAnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = AnswerForm 
         fields = ('key', 'answer_id', 'QorA', 'vote')   
+
+class StarAnswerSerializer(serializers.ModelSerializer):
+    question_id = serializers.IntegerField(
+            required=True
+            )
+
+    answer_id = serializers.IntegerField(
+            required=True
+            )
+
+    key = serializers.CharField(
+            label='token',
+            min_length=40,
+            max_length=40,
+            required=True
+            )
+    
+    def validate_question_id(self, question_id):
+        if not QuestionForm.objects.filter(id__exact=question_id):
+            raise serializers.ValidationError("This question ID does not exist")
+        return question_id        
+    
+    def validate_answer_id(self, answer_id):
+        if not AnswerForm.objects.filter(id__exact=answer_id):
+            raise serializers.ValidationError("This answer ID does not exist")
+        return answer_id        
+    
+    def validate_key(self, key):
+        if not Token.objects.filter(key__exact=key):
+            raise serializers.ValidationError("This token does not exist")
+        return key
+    
+    def validate(self, data):
+        user = User.objects.get(id=Token.objects.get(key=data['key']).user.id)
+        question = QuestionForm.objects.get(id=data['question_id'])
+        answer = AnswerForm.objects.get(id=data['answer_id'])
+        if user != question.user:
+            raise serializers.ValidationError('The author of the question does not match the token.')
+        is_answer = False
+        for ans in AnswerForm.objects.filter(question_id=question.id):
+            if ans.id == answer.id:
+                is_answer = True
+                break
+        if is_answer == False:
+            raise serializers.ValidationError('This answer is not under this question')
+        return data 
+
+    class Meta:
+        model = QuestionForm 
+        fields = ('key', 'question_id', 'answer_id')   
+

@@ -52,7 +52,7 @@ class QuestionForm(models.Model):
 
     expertises = models.ManyToManyField(Expertise)
 
-    resolved = models.BooleanField('Resovled', default=False)
+    star_answer = models.IntegerField('Star Answer ID', default=0)
 
     votes = models.ManyToManyField(Vote)
 
@@ -75,7 +75,7 @@ class AnswerForm(models.Model):
 
     votes = models.ManyToManyField(Vote)
     
-    #stars = models.ManyToManyField(Star)
+    star = models.BooleanField('Star Answer', default=False)
 
     class Meta:
         verbose_name = 'Answer Form'
