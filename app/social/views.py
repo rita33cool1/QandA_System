@@ -164,6 +164,7 @@ def CancelFollowing(request, format='json'):
     json = {'msg':error_message, 'errorMsg': error_msg}
     return Response(json, status=httpstatus)
 
+"""
 @api_view(['POST'])
 def GiveStar(request, format='json'):
     serializer = StarSerializer(data=request.data)
@@ -213,4 +214,4 @@ def CancelStar(request, format='json'):
     else: error_msg = ParseErrorMsg(serializer.errors)
     json = {'msg':error_message, 'errorMsg': error_msg}
     return Response(json, status=httpstatus)
-
+"""

@@ -293,13 +293,14 @@ def StarAnswer(request, format='json'):
     json = {"msg": error_msg, "errorMsg": ParseErrorMsg(serializer.errors)}
     return Response(json, status=httpstatus)
 
-def CommentContentModfy(serializer_data):
+def CommentContentModfy(serializer_data, QorA):
     for data in serializer_data:
         data['user_id'] = data['user']
         data['user'] = User.objects.get(id=data['user_id']).username
         data['question_id'] = data['question']
         del data['question']
-        data['answer_id'] = data['answer']
+        if QorA == 'answer':
+            data['answer_id'] = data['answer']
         del data['answer']
 
 def ExtractVoters(serializer_data):
@@ -318,7 +319,7 @@ class GetQuestion(generics.ListAPIView):
     def get_queryset(self):
         queryset = QuestionForm.objects.all()
         qid = self.request.query_params.get('qid', None)
-        if qid is None :
+        if qid is None or qid == '1':
             return QuestionForm.objects.none()
         else:
             return queryset.filter(id__exact=qid)
@@ -354,7 +355,7 @@ class GetQuestion(generics.ListAPIView):
             ExtractVoters(question_serializer.data)
             if comment_queryset:
                 comment_serializer = GetCommentSerializer(comment_queryset.filter(answer_id=1), many=True)
-                CommentContentModfy(comment_serializer.data)
+                CommentContentModfy(comment_serializer.data, 'question')
                 question_serializer.data[0]['comments'] = comment_serializer.data
             result = {"question": question_serializer.data}
         queryset = self.get_queryset_answer()
@@ -367,7 +368,7 @@ class GetQuestion(generics.ListAPIView):
                 ans['user'] = user.username
                 if comment_queryset:
                     comment_serializer = GetCommentSerializer(comment_queryset.filter(answer_id=ans['id']), many=True)
-                    CommentContentModfy(comment_serializer.data)
+                    CommentContentModfy(comment_serializer.data, 'answer')
                     ans['comments'] = comment_serializer.data
             result['answers'] = answer_serializer.data                
 

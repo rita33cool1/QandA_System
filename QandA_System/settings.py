@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     # My Libs
     'rest_framework',
     'rest_framework.authtoken',
+    'reset_migrations',
 ]
 
 MIDDLEWARE = [
@@ -86,9 +87,9 @@ DATABASES = {
         #'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
         
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'users', 
+        'NAME': 'app', 
         'USER': 'root',
-        'PASSWORD': , 
+        'PASSWORD': '', 
         'HOST': '127.0.0.1',
     }
 }
@@ -122,9 +123,13 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 REST_FRAMEWORK = {
-  'DEFAULT_AUTHENTICATION_CLASSES': (
-      'rest_framework.authentication.TokenAuthentication',
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+    ),
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
     )
+    
 }
 
 
@@ -133,7 +138,7 @@ REST_FRAMEWORK = {
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'Asia/Taipei'
+TIME_ZONE = ''
 
 USE_I18N = True
 
