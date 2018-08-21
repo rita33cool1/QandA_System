@@ -81,8 +81,10 @@ class QuestionSerializer(serializers.ModelSerializer):
             else:
                 instance.expertises.clear()
                 for tag in validated_data['expertises']:
-                    htag = Expertise(expertise=tag)
-                    htag.save()
+                    try: htag = Expertise.objects.get(expertise=tag)
+                    except:    
+                        htag = Expertise(expertise=tag)
+                        htag.save()
                     instance.expertises.add(htag)
             instance.save()
             return instance 

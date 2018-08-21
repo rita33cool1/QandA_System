@@ -227,7 +227,7 @@ def ModifyComment(request, format='json'):
 
 @api_view(['POST'])
 def DeleteComment(request, format='json'):
-    serializer = VoteForAnswerSerializer(data=request.data)
+    serializer = DeleteCommentSerializer(data=request.data)
     if serializer.is_valid():
         CommentForm.objects.get(id=serializer.data['comment_id']).delete()
         json = {"msg": success_msg}
@@ -319,6 +319,7 @@ class GetQuestion(generics.ListAPIView):
     def get_queryset(self):
         queryset = QuestionForm.objects.all()
         qid = self.request.query_params.get('qid', None)
+        #if qid is None:
         if qid is None or qid == '1':
             return QuestionForm.objects.none()
         else:
@@ -352,6 +353,10 @@ class GetQuestion(generics.ListAPIView):
             user = User.objects.get(id=question_serializer.data[0]['user'])
             question_serializer.data[0]['user_id'] = user.id
             question_serializer.data[0]['user'] = user.username
+            exps = [] 
+            for ei in question_serializer.data[0]['expertises']:
+                exps.append(Expertise.objects.get(id=ei).expertise)
+            question_serializer.data[0]['expertises'] = exps
             ExtractVoters(question_serializer.data)
             if comment_queryset:
                 comment_serializer = GetCommentSerializer(comment_queryset.filter(answer_id=1), many=True)

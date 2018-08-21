@@ -124,7 +124,7 @@ class GetUserList(generics.ListAPIView):
         queryset = User.objects.all()
         username = self.request.query_params.get('username', None)
         if username is not None:
-            return queryset.filter(username__contains=username)
+            return queryset.filter(username__icontains=username)
         else:
             return queryset
 
@@ -140,8 +140,6 @@ class GetUserList(generics.ListAPIView):
             ori_data['friends'] = getUserFromM2Mfriend(profile.friends.all())
             ori_data['followings'] = getUserFromM2Mfriend(profile.followings.all())
             ori_data['expertises'] = getEleFromM2Mfield(profile.expertises.all().values(), 'expertise')
-            ori_data['star_givings'] = getUserFromM2Mfriend(profile.star_givings.all())
-            ori_data['star_number'] = len(getUserFromM2Mfriend(profile.star_givers.all()))          
             
         return Response(serializer.data)
 
@@ -252,8 +250,7 @@ class GetExpertiseList(generics.ListAPIView):
         if exp is None:
             return queryset
         else:
-            #return queryset.filter(expertises__contains=exp)
-            return queryset.filter(expertise__contains=exp)
+            return queryset.filter(expertise__icontains=exp)
 
     def get_queryset_user(self):
         queryset = UserProfile.objects.all()
@@ -261,8 +258,7 @@ class GetExpertiseList(generics.ListAPIView):
         if exp is None:
             return queryset
         else:
-            #return queryset.filter(expertises__contains=exp)
-            return queryset.filter(expertises__expertise__contains=exp)
+            return queryset.filter(expertises__expertise__icontains=exp)
 
     def get_queryset_question(self):
         queryset = QuestionForm.objects.all()
@@ -270,7 +266,10 @@ class GetExpertiseList(generics.ListAPIView):
         if exp is None:
             return queryset
         else:
-            return queryset.filter(expertises__expertise__contains=exp)
+            queryset = queryset.filter(expertises__expertise__icontains=exp)
+            try: queryset = queryset.exclude(id=1)
+            except: pass
+            return queryset
 
     def list(self, request):
         expertise = self.request.query_params.get('key', None)
@@ -307,7 +306,6 @@ class GetExpertiseList(generics.ListAPIView):
         # response related question
         serializer = GetQuestionSerializer(queryset_question, many=True)
         for ori_data in RemoveDuplic(serializer.data):
-        #for ori_data in serializer.data:
             if len(ori_data['expertises']) > 0:
                 for ori_exp in ori_data['expertises']:
                     for exp in exps:

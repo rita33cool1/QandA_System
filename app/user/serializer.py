@@ -92,11 +92,6 @@ class SetExpertiseSerializer(serializers.ModelSerializer):
             child=serializers.CharField(max_length=32),
             )
 
-#    def validate_expertises(self, expertises):
-#        if len(expertises) == 0:
-#            raise serializers.ValidationError('Please enter the new expertises')
-#        return expertises    
-
     class Meta:
         model = UserProfile
         fields = (['expertises'])    
