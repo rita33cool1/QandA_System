@@ -350,8 +350,8 @@ class VoteForQuestionSerializer(serializers.ModelSerializer):
             )
     
     def validate_vote(self, vote):
-        if vote != 1 and vote != -1 and vote != 0:
-            raise serializers.ValidationError("Vote only can be 1, 0 or -1, which represents you like or dislike this post.")
+        if vote != 1 and vote != -1:
+            raise serializers.ValidationError("Vote only can be 1 or -1, which represents you like or dislike this post.")
         return vote
     
     def validate_key(self, key):

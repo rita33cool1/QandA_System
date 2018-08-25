@@ -170,12 +170,6 @@ def GetProfile(request, format='json'):
         followers = []
         for f in profile.followers.all():
             followers.append(f.user.username)
-        givers = []
-        for g in profile.star_givers.all():
-            givers.append(g.user.username)
-        givings = []
-        for g in profile.star_givings.all():
-            givings.append(g.user.username)
         json = {
                 'msg': success_message, 
                 'username': user.username, 
@@ -187,8 +181,6 @@ def GetProfile(request, format='json'):
                 'friend_requests': friend_requests,
                 'followings': followings,
                 'followers': followers,
-                'star_givings': givings,
-                'star_givers': givers
                 }
         return Response(json, status=httpstatus)
     

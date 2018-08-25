@@ -255,16 +255,19 @@ def VotePost(request, format='json'):
     if error_message == "" and serializer.is_valid():
         token = Token.objects.get(key=serializer.data['key'])
         user = User.objects.get(id=token.user.id)
-        if Vote.objects.filter(user_id=user.id, vote=serializer.data['vote']):
-            vote = Vote.objects.filter(user_id=user.id, vote=serializer.data['vote']).first()
-        else:
-            vote = Vote(user=user, vote=serializer.data['vote'])
-            vote.save()
+        is_vote = False
         for v in post.votes.all():
             if v.user == user:
-                post.votes.remove(v)
-        post.save()
-        post.votes.add(vote)
+                is_vote = True
+                vote_number = v.vote + int(serializer.data['vote'])
+                if vote_number <= 1 and vote_number >= -1:
+                    v.vote = vote_number
+                    v.save()
+        if not is_vote:
+            vote = Vote(user=user, vote=serializer.data['vote'])
+            vote.save()
+            post.save()
+            post.votes.add(vote)
         json = {"msg": success_msg}
         return Response(json, status=httpstatus)
     elif error_message == "":
